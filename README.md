@@ -8,8 +8,7 @@ A relationship OS for students. Upload your contacts CSV and AI surfaces who to 
 cue/
 ├── api/
 │   └── analyze.js      # Vercel serverless proxy (keeps API key secret)
-├── public/
-│   └── index.html      # Frontend (hosted on GitHub Pages)
+├── index.html          # Frontend
 ├── vercel.json
 └── README.md
 ```
@@ -29,17 +28,19 @@ cue/
 3. Go to Project Settings → Environment Variables → add:
    - **Name:** `ANTHROPIC_API_KEY`
    - **Value:** your Anthropic API key (from console.anthropic.com)
+   - **Name:** `ALLOWED_ORIGIN`
+   - **Value:** the exact origin allowed to call the proxy, for example `https://yourusername.github.io`
 4. Deploy. Your proxy lives at `https://cue-app.vercel.app/api/analyze`
 
 ### 3. Connect them
 
-In `public/index.html`, update this line to your actual Vercel URL:
+If you host the frontend separately from Vercel, define `window.CUE_API_URL` before the app script runs:
 
 ```js
-const PROXY_URL = 'https://cue-app.vercel.app/api/analyze';
+window.CUE_API_URL = 'https://cue-app.vercel.app/api/analyze';
 ```
 
-Then push — GitHub Pages will update automatically.
+When the frontend is served from the same Vercel project, Cue automatically uses `/api/analyze`.
 
 ## CSV Format
 

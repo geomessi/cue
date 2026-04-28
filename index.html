@@ -467,6 +467,36 @@ let activeDraft2 = null;
 let draftMode = 'casual';
 let draftMode2 = 'casual';
 
+function resolveProxyUrl() {
+  if (window.CUE_API_URL) return window.CUE_API_URL;
+  if (
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname.endsWith('.vercel.app')
+  ) {
+    return '/api/analyze';
+  }
+  return null;
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  }[char]));
+}
+
+function safeText(value) {
+  return escapeHtml(value).trim();
+}
+
+function joinMeta(parts) {
+  return parts.filter(Boolean).map(safeText).join(' · ');
+}
+
 // ─── NAVIGATION ──────────────────────────────────────────────────────────────
 function showPage(name, el) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -600,9 +630,12 @@ Rules:
 
   try {
     // Calls our Vercel proxy, which adds the API key server-side
-    const PROXY_URL = 'https://cue-silk.vercel.app/';
+    const proxyUrl = resolveProxyUrl();
+    if (!proxyUrl) {
+      throw new Error('Set window.CUE_API_URL to your deployed /api/analyze endpoint before using Cue from a separate frontend host.');
+    }
 
-    const res = await fetch(PROXY_URL, {
+    const res = await fetch(proxyUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -613,6 +646,8 @@ Rules:
     });
 
     const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Analysis failed');
+    if (!Array.isArray(data.content)) throw new Error('Unexpected response shape');
     const text = data.content.map(b => b.text || '').join('');
     const clean = text.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(clean);
@@ -647,7 +682,7 @@ function getAvatarColors(name) {
 
 function avatarHtml(name) {
   const c = getAvatarColors(name);
-  const initial = name.charAt(0).toUpperCase();
+  const initial = safeText(name.charAt(0).toUpperCase());
   return `<div class="contact-avatar" style="background:${c.bg};color:${c.fg}">${initial}</div>`;
 }
 
@@ -694,14 +729,14 @@ function renderNudgeList() {
     <div class="contact-card" onclick="openDraft1(${analyzed.indexOf(c)})">
       ${avatarHtml(c.name)}
       <div>
-        <div class="contact-name">${c.name}</div>
+        <div class="contact-name">${safeText(c.name)}</div>
         <div class="contact-meta">
           <span class="warmth-dot ${warmthDotClass(c.warmth)}"></span>
-          ${[c.company, c.last ? 'Last: ' + c.last : ''].filter(Boolean).join(' · ')}
+          ${joinMeta([c.company, c.last ? 'Last: ' + c.last : ''])}
         </div>
-        <div class="contact-note">${c.reason}</div>
+        <div class="contact-note">${safeText(c.reason)}</div>
       </div>
-      <div class="nudge-pill ${pillClass(c.warmth, c.shouldNudge)}">${c.nudgeLabel}</div>
+      <div class="nudge-pill ${pillClass(c.warmth, c.shouldNudge)}">${safeText(c.nudgeLabel)}</div>
     </div>
   `).join('');
 
@@ -710,16 +745,16 @@ function renderNudgeList() {
   const allNudges = analyzed.filter(c => c.shouldNudge);
   if (allNudges.length > 0) {
     document.getElementById('nudgesBanner').style.display = 'block';
-    document.getElementById('nudgesBanner').innerHTML = `<strong>Recruiting season is active.</strong> You have ${allNudges.length} contact${allNudges.length > 1 ? 's' : ''} worth reaching out to — based on your notes and relationship history.`;
+    document.getElementById('nudgesBanner').textContent = `Recruiting season is active. You have ${allNudges.length} contact${allNudges.length > 1 ? 's' : ''} worth reaching out to based on your notes and relationship history.`;
     nudgesPage.innerHTML = allNudges.map(c => `
       <div class="contact-card" onclick="openDraft2Page(${analyzed.indexOf(c)})">
         ${avatarHtml(c.name)}
         <div>
-          <div class="contact-name">${c.name}${c.company ? ' — ' + c.company : ''}</div>
-          <div class="contact-meta"><span class="warmth-dot ${warmthDotClass(c.warmth)}"></span>${c.last ? 'Last contact: ' + c.last : 'Contact date unknown'}</div>
-          <div class="contact-note">${c.reason}</div>
+          <div class="contact-name">${safeText(c.name)}${c.company ? ' — ' + safeText(c.company) : ''}</div>
+          <div class="contact-meta"><span class="warmth-dot ${warmthDotClass(c.warmth)}"></span>${safeText(c.last ? 'Last contact: ' + c.last : 'Contact date unknown')}</div>
+          <div class="contact-note">${safeText(c.reason)}</div>
         </div>
-        <div class="nudge-pill ${pillClass(c.warmth, c.shouldNudge)}">${c.nudgeLabel}</div>
+        <div class="nudge-pill ${pillClass(c.warmth, c.shouldNudge)}">${safeText(c.nudgeLabel)}</div>
       </div>
     `).join('');
   }
@@ -733,14 +768,14 @@ function renderAllContacts() {
     <div class="contact-card" onclick="openDraft1(${i})">
       ${avatarHtml(c.name)}
       <div>
-        <div class="contact-name">${c.name}</div>
+        <div class="contact-name">${safeText(c.name)}</div>
         <div class="contact-meta">
           <span class="warmth-dot ${warmthDotClass(c.warmth)}"></span>
-          ${[c.company, c.role].filter(Boolean).join(' · ')}
+          ${joinMeta([c.company, c.role])}
         </div>
-        <div class="contact-note">${c.last ? 'Last contact: ' + c.last : ''}${c.notes ? (c.last ? ' · ' : '') + c.notes.substring(0, 80) : ''}</div>
+        <div class="contact-note">${safeText(`${c.last ? 'Last contact: ' + c.last : ''}${c.notes ? (c.last ? ' · ' : '') + c.notes.substring(0, 80) : ''}`)}</div>
       </div>
-      <div class="nudge-pill ${pillClass(c.warmth, c.shouldNudge)}">${c.warmth === 'warm' ? 'Warm' : c.shouldNudge ? c.nudgeLabel : 'Current'}</div>
+      <div class="nudge-pill ${pillClass(c.warmth, c.shouldNudge)}">${safeText(c.warmth === 'warm' ? 'Warm' : c.shouldNudge ? c.nudgeLabel : 'Current')}</div>
     </div>
   `).join('');
 }
@@ -767,8 +802,8 @@ function renderBrief() {
   const items = [
     nudges.length > 0 && `<strong>${nudges.length} contact${nudges.length > 1 ? 's' : ''}</strong> worth reaching out to based on your notes and timing`,
     warm.length > 0 && `<strong>${warm.length} warm relationship${warm.length > 1 ? 's' : ''}</strong> — keep up the momentum`,
-    nudges[0] && `<strong>${nudges[0].name}</strong>${nudges[0].company ? ' at ' + nudges[0].company : ''} — ${nudges[0].reason}`,
-    nudges[1] && `<strong>${nudges[1].name}</strong>${nudges[1].company ? ' at ' + nudges[1].company : ''} — ${nudges[1].reason}`,
+    nudges[0] && `<strong>${safeText(nudges[0].name)}</strong>${nudges[0].company ? ' at ' + safeText(nudges[0].company) : ''} — ${safeText(nudges[0].reason)}`,
+    nudges[1] && `<strong>${safeText(nudges[1].name)}</strong>${nudges[1].company ? ' at ' + safeText(nudges[1].company) : ''} — ${safeText(nudges[1].reason)}`,
   ].filter(Boolean);
 
   const itemsHtml = items.map(t => `
