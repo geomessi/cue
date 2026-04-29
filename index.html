@@ -2451,6 +2451,16 @@ async function profileSendEmail() {
   }
 }
 
+// ─── DRAFT HELPERS ────────────────────────────────────────────────────────────
+
+// Robustly extract the first {...} JSON object from Claude's response,
+// even if Claude adds explanation text before or after it.
+function extractJson(text) {
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error(`No JSON object found in: ${text.slice(0, 200)}`);
+  return JSON.parse(match[0]);
+}
+
 // ─── DRAFT PANEL ─────────────────────────────────────────────────────────────
 function openDraftPanel() {
   document.getElementById('draftBackdrop').classList.add('open');
@@ -2484,28 +2494,29 @@ async function openDraft1(idx) {
 
   try {
     const proxyUrl = resolveProxyUrl();
-    const notes = c.notes || '';
-    const context = c.relationship_context || c.reason || c.notes || '';
+    const fn = c.name.split(' ')[0];
+    const context = cleanContext(c.relationship_context || c.reason || c.notes || '');
     const hook = c.follow_up_hook || '';
+    const notes = c.notes || '';
     const today = new Date().toISOString().split('T')[0];
 
-    const prompt = `You are writing a real, personal message on behalf of Georgia to ${c.name.split(' ')[0]}.
+    const prompt = `You are writing a short, personal outreach message from Georgia to ${fn}.
 
 Today: ${today}
 Contact: ${c.name}${c.role ? `, ${c.role}` : ''}${c.company ? ` at ${c.company}` : ''}
 Last contact: ${c.last || 'unknown'}
 Warmth: ${c.warmth || 'unknown'}
-Context: ${context}${hook ? `\nSuggested purpose: ${hook}` : ''}${notes ? `\nNotes: ${notes}` : ''}
+Background: ${context}${hook ? `\nReason to reach out: ${hook}` : ''}${notes && notes !== context ? `\nNotes: ${notes}` : ''}
 
-Write two versions of a message from Georgia — one casual, one professional. Rules:
-- Use the "suggested purpose" as the primary reason to reach out when it's specific and actionable. If it's vague, use the context instead to find a natural reason.
-- Reference something concrete and specific from the context — a conversation, a project, a shared connection, a specific ask. Never be generic.
-- Do NOT say "hope things are going well", "I wanted to reach out", "just checking in", or any other filler.
-- Do NOT mention Georgia's name in the message (she's the one writing it).
-- Sound human, warm, and direct. Under 60 words each.
-- Sign off naturally (first name only, or nothing) — never "[Your Name]".
+Write two versions (casual and professional). Both must:
+- Open by referencing something SPECIFIC and REAL from the background or reason — a project, a conversation, a shared connection, a specific ask. If there's a clear reason to reach out, lead with that.
+- Sound like Georgia wrote it herself — no corporate tone, no filler openers.
+- NEVER use: "hope things are going well", "I wanted to reach out", "just checking in", "touching base", "circle back".
+- NOT mention Georgia by name (she's writing it).
+- Be under 60 words.
+- End naturally — no "[Your Name]", no formal sign-off unless it fits.
 
-Respond ONLY with valid JSON, no markdown:
+Return ONLY this JSON (no markdown, no explanation before or after):
 {"casual": "...", "professional": "..."}`;
 
     const res = await fetch(proxyUrl, {
@@ -2513,9 +2524,10 @@ Respond ONLY with valid JSON, no markdown:
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 500, messages: [{ role: 'user', content: prompt }] })
     });
+    if (!res.ok) throw new Error(`API ${res.status}`);
     const data = await res.json();
     const text = data.content.map(b => b.text || '').join('');
-    const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+    const parsed = extractJson(text);
 
     c.casual = parsed.casual;
     c.professional = parsed.professional;
@@ -2523,21 +2535,14 @@ Respond ONLY with valid JSON, no markdown:
 
     activeDraft = c;
     draftMode = 'casual';
-    document.getElementById('draftName').textContent = `draft for ${c.name.split(' ')[0]}`;
+    document.getElementById('draftName').textContent = `draft for ${fn}`;
     document.getElementById('draftBody').textContent = parsed.casual;
     document.querySelectorAll('#draftPanel .draft-tab').forEach((t,i) => t.classList.toggle('active', i===0));
   } catch(e) {
-    // Fallback — at least try to reference something real
+    console.error('[cue] draft generation failed (csv):', e);
+    // Don't cache — let them retry by clicking again
     const fn = c.name.split(' ')[0];
-    const ctx = c.relationship_context || c.reason || '';
-    const seed = ctx ? ctx.split('.')[0] : '';
-    c.casual = seed
-      ? `Hey ${fn}! ${seed}. Would love to reconnect — let me know what you're up to.`
-      : `Hey ${fn}! Been a while — would love to catch up. What are you working on these days?`;
-    c.professional = c.casual;
-    c._draftGenerated = true;
-    activeDraft = c;
-    document.getElementById('draftBody').textContent = c.casual;
+    document.getElementById('draftBody').textContent = `draft generation failed — tap "looking for a cue?" again to retry.`;
   }
 }
 
@@ -2615,26 +2620,27 @@ async function openEmailContactDraft(idx) {
 
   try {
     const proxyUrl = resolveProxyUrl();
+    const fn = c.name.split(' ')[0];
     const today = new Date().toISOString().split('T')[0];
-    const notes = c.notes || '';
-    const context = c.relationship_context || '';
+    const context = cleanContext(c.relationship_context || '');
     const hook = c.follow_up_hook || '';
+    const notes = c.notes || '';
 
-    const prompt = `You are writing a real, personal message on behalf of Georgia to ${c.name.split(' ')[0]}.
+    const prompt = `You are writing a short, personal outreach message from Georgia to ${fn}.
 
 Today: ${today}
 Contact: ${c.name}${c.role ? `, ${c.role}` : ''}${c.company ? ` at ${c.company}` : ''}
-How they're connected: ${context}${hook ? `\nSuggested purpose: ${hook}` : ''}${notes ? `\nNotes: ${notes}` : ''}
+How they met: ${context}${hook ? `\nReason to reach out: ${hook}` : ''}${notes ? `\nNotes: ${notes}` : ''}
 
-Write two versions of a message from Georgia — one casual, one professional. Rules:
-- Use the "suggested purpose" as the primary reason to reach out when it's specific and actionable. If it's vague, use the connection context to find a natural angle.
-- Reference something concrete and specific — the intro, a conversation they had, a specific project or ask. Never be generic.
-- Do NOT say "hope things are going well", "I wanted to reach out", "just checking in", or any filler.
-- Do NOT mention Georgia's name in the message.
-- Sound human, warm, direct. Under 60 words each.
-- Sign off naturally (first name only, or nothing) — never "[Your Name]".
+Write two versions (casual and professional). Both must:
+- Open by referencing something SPECIFIC and REAL — the intro, a conversation, a shared connection, a concrete ask. If there's a clear reason to reach out, lead with that.
+- Sound like Georgia wrote it herself — warm, direct, no corporate tone.
+- NEVER use: "hope things are going well", "I wanted to reach out", "just checking in", "touching base", "circle back".
+- NOT mention Georgia by name (she's writing it).
+- Be under 60 words.
+- End naturally — no "[Your Name]".
 
-Respond ONLY with valid JSON, no markdown:
+Return ONLY this JSON (no markdown, no explanation before or after):
 {"casual": "...", "professional": "..."}`;
 
     const res = await fetch(proxyUrl, {
@@ -2642,9 +2648,10 @@ Respond ONLY with valid JSON, no markdown:
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 500, messages: [{ role: 'user', content: prompt }] })
     });
+    if (!res.ok) throw new Error(`API ${res.status}`);
     const data = await res.json();
     const text = data.content.map(b => b.text || '').join('');
-    const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+    const parsed = extractJson(text);
 
     c.casual = parsed.casual;
     c.professional = parsed.professional;
@@ -2652,20 +2659,13 @@ Respond ONLY with valid JSON, no markdown:
 
     activeDraft = c;
     draftMode = 'casual';
-    document.getElementById('draftName').textContent = `draft for ${c.name.split(' ')[0]}`;
+    document.getElementById('draftName').textContent = `draft for ${fn}`;
     document.getElementById('draftBody').textContent = parsed.casual;
     document.querySelectorAll('#draftPanel .draft-tab').forEach((t,i) => t.classList.toggle('active', i===0));
   } catch(e) {
-    const fn = c.name.split(' ')[0];
-    const ctx = c.relationship_context || '';
-    const seed = ctx ? ctx.split('.')[0] : '';
-    c.casual = seed
-      ? `Hey ${fn}! ${seed}. Would love to reconnect — what are you up to these days?`
-      : `Hey ${fn}! Been meaning to reach out — would love to catch up. What are you working on?`;
-    c.professional = c.casual;
-    c._draftGenerated = true;
-    activeDraft = c;
-    document.getElementById('draftBody').textContent = c.casual;
+    console.error('[cue] draft generation failed (email):', e);
+    // Don't cache — let them retry by clicking again
+    document.getElementById('draftBody').textContent = `draft generation failed — tap "looking for a cue?" again to retry.`;
   }
 }
 
