@@ -1613,13 +1613,14 @@ function buildColMap(row) {
     return null;
   };
   return {
-    name:    find('name'),
-    email:   find('email', 'mail'),
-    company: find('company', 'org', 'employer'),
-    role:    find('role', 'title', 'position', 'job'),
-    last:    find('last', 'date', 'contact', 'touched'),
-    notes:   find('note', 'context', 'memo'),
-    warmth:  find('warmth', 'warm', 'status'),
+    name:     find('name'),
+    email:    find('email', 'mail'),
+    company:  find('company', 'org', 'employer'),
+    role:     find('role', 'title', 'position', 'job'),
+    last:     find('last', 'date', 'contact', 'touched'),
+    notes:    find('note', 'context', 'memo'),
+    warmth:   find('warmth', 'warm', 'status'),
+    linkedin: find('linkedin', 'linked in', 'li'),
   };
 }
 
@@ -1645,12 +1646,13 @@ function resolveProxyUrl() {
 async function analyzeContact(row, colMap) {
   const get = (key) => colMap[key] ? (row[colMap[key]] || '').trim() : '';
 
-  const name    = get('name')    || 'Unknown';
-  const company = get('company') || '';
-  const role    = get('role')    || '';
-  const last    = get('last')    || '';
-  const notes   = get('notes')  || '';
-  const email   = get('email')  || '';
+  const name     = get('name')     || 'Unknown';
+  const company  = get('company')  || '';
+  const role     = get('role')     || '';
+  const last     = get('last')     || '';
+  const notes    = get('notes')    || '';
+  const email    = get('email')    || '';
+  const linkedin = get('linkedin') || '';
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -1701,10 +1703,10 @@ Rules:
     const clean = text.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(clean);
 
-    return { name, company, role, last, notes, email, ...parsed, raw: row };
+    return { name, company, role, last, notes, email, linkedin, ...parsed, raw: row };
   } catch (e) {
     return {
-      name, company, role, last, notes, email,
+      name, company, role, last, notes, email, linkedin,
       warmth: 'lukewarm', shouldNudge: false,
       nudgeLabel: 'Check in',
       reason: 'Consider reaching out to maintain this relationship.',
