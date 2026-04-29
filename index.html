@@ -88,10 +88,24 @@
   }
   .badge:empty, .badge[data-count="0"] { display: none; }
 
+  /* APP HEADER */
+  .app-header {
+    position: fixed;
+    top: 0; left: 208px; right: 0;
+    height: 52px;
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 44px;
+    z-index: 150;
+    justify-content: flex-end;
+  }
+
   /* MAIN */
   .main {
     margin-left: 208px;
     padding: 44px 52px;
+    padding-top: calc(52px + 36px);
     min-height: 100vh;
   }
 
@@ -201,8 +215,9 @@
   .contact-avatar {
     width: 40px; height: 40px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-family: 'Cormorant Garamond', serif; font-size: 17px; font-weight: 400;
+    font-family: 'Cormorant Garamond', serif; font-size: 14px; font-weight: 500;
     flex-shrink: 0; background: var(--blush); color: var(--terracotta);
+    letter-spacing: 0.02em;
   }
 
   .contact-name { font-size: 14px; font-weight: 500; color: var(--text-dark); margin-bottom: 2px; }
@@ -790,14 +805,11 @@
 
   /* ── REVIEW PILL ──────────────────────────────────────────────────────────── */
   .review-pill {
-    position: fixed;
-    top: 36px; right: 44px;
     background: var(--white); border: 1px solid var(--border);
-    border-radius: 24px; padding: 8px 16px;
+    border-radius: 24px; padding: 6px 14px;
     display: flex; align-items: center; gap: 6px;
     font-size: 12px; font-weight: 500; color: var(--text-soft);
-    cursor: pointer; z-index: 200;
-    box-shadow: 0 2px 12px rgba(180,100,60,0.08);
+    cursor: pointer;
     transition: all 0.15s;
   }
   .review-pill:hover { border-color: var(--terracotta); color: var(--terracotta); }
@@ -960,11 +972,13 @@
   <a class="nav-item" id="navCompanies" onclick="showPage('contacts-companies',this)"><span class="icon">◈</span> companies</a>
 </nav>
 
-<main class="main">
-
+<header class="app-header">
   <div id="reviewPill" class="review-pill" onclick="openReviewOverlay()" style="display:none">
     <span>◇ review</span><span class="review-pill-count" id="reviewPillCount"></span>
   </div>
+</header>
+
+<main class="main">
 
   <!-- PEOPLE -->
   <div class="page active" id="page-contacts">
@@ -1422,10 +1436,16 @@ function getAvatarColors(name) {
   return palettes[idx];
 }
 
+function getInitials(name) {
+  const parts = (name || '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+}
+
 function avatarHtml(name) {
   const c = getAvatarColors(name);
-  const initial = safeText(name.charAt(0).toUpperCase());
-  return `<div class="contact-avatar" style="background:${c.bg};color:${c.fg}">${initial}</div>`;
+  return `<div class="contact-avatar" style="background:${c.bg};color:${c.fg}">${safeText(getInitials(name))}</div>`;
 }
 
 function warmthDotClass(warmth) {
@@ -1511,8 +1531,7 @@ function buildReviewCardHtml(item) {
   let avatarHtml;
   if (isPerson) {
     const c = getAvatarColors(item.name || '?');
-    const init = (item.name || '?').charAt(0).toUpperCase();
-    avatarHtml = `<div class="rc-avatar" style="background:${c.bg};color:${c.fg}">${safeText(init)}</div>`;
+    avatarHtml = `<div class="rc-avatar" style="background:${c.bg};color:${c.fg}">${safeText(getInitials(item.name || '?'))}</div>`;
   } else {
     const init = (item.name || '?').charAt(0).toUpperCase();
     avatarHtml = `<div class="rc-company-avatar">${safeText(init)}</div>`;
