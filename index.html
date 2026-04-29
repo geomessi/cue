@@ -980,12 +980,18 @@ function showToast() {
 
 // ─── INBOX SHELF ─────────────────────────────────────────────────────────────
 
+// Names to always hide from the inbox shelf (the inbox owner may appear
+// in emails under a different address than GMAIL_USER_EMAIL).
+const SELF_NAMES = ['georgia messinger'];
+
 async function loadEmailContacts() {
   try {
     const res = await fetch('/api/contacts?source=email_import&limit=50');
     if (!res.ok) return;
     const data = await res.json();
-    emailContacts = data.contacts || [];
+    emailContacts = (data.contacts || []).filter(
+      c => !SELF_NAMES.includes((c.name || '').toLowerCase().trim())
+    );
     renderInboxShelf();
   } catch (e) {
     // Silently degrade — DB may not be configured in all environments
