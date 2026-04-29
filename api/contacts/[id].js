@@ -2,7 +2,7 @@
  * PATCH /api/contacts/[id]
  *
  * Updates a contact's fields and returns the updated row.
- * Accepts: { status, name, company, role, notes, follow_up_hook, relationship_context }
+ * Accepts: { status, name, company, role, notes, linkedin, follow_up_hook, relationship_context }
  */
 
 import { neon } from "@neondatabase/serverless";
@@ -28,6 +28,7 @@ export default async function handler(req, res) {
     company,
     role,
     notes,
+    linkedin,
     follow_up_hook,
     relationship_context,
   } = req.body || {};
@@ -42,6 +43,7 @@ export default async function handler(req, res) {
         company              = COALESCE(${company ?? null}, company),
         role                 = COALESCE(${role ?? null}, role),
         notes                = COALESCE(${notes ?? null}, notes),
+        linkedin             = COALESCE(${linkedin ?? null}, linkedin),
         follow_up_hook       = COALESCE(${follow_up_hook ?? null}, follow_up_hook),
         relationship_context = COALESCE(${relationship_context ?? null}, relationship_context),
         updated_at           = NOW()

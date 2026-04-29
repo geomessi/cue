@@ -58,3 +58,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS companies_name_idx ON companies (lower(name));
 
 -- Migration: set existing email-imported contacts back to pending_review for demo
 UPDATE contacts SET status = 'pending_review' WHERE source = 'email_import' AND status = 'active';
+
+-- Migration: add linkedin URL field
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS linkedin TEXT;
