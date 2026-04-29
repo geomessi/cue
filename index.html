@@ -1729,15 +1729,15 @@ function escapeHtml(value) {
 
 function safeText(value) { return escapeHtml(value).trim(); }
 
-// Strip third-person references to Georgia before showing context on cards
+// Strip references to Georgia by name before showing context on cards
 function cleanContext(text) {
   if (!text) return '';
   return text
-    .replace(/\bGeorgia(?:'s)?\b/gi, 'you')
-    .replace(/\bher\b/g, 'your')
-    .replace(/\bshe\b/gi, 'you')
     .replace(/^The (primary|main|direct) recipient of [^.]+\.\s*/i, '')
-    .replace(/\bthe inbox owner\b/gi, 'you')
+    .replace(/\bwith Georgia\b/gi, '')
+    .replace(/\bGeorgia'?s?\b/gi, '')
+    .replace(/\bthe inbox owner\b/gi, '')
+    .replace(/\s{2,}/g, ' ')
     .trim();
 }
 
