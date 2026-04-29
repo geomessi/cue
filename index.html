@@ -245,10 +245,17 @@
   .progress-fill { height: 100%; background: var(--terracotta); border-radius: 4px; transition: width 0.4s ease; }
 
   /* DRAFT PANEL */
+  .draft-panel-backdrop {
+    display: none; position: fixed; inset: 0;
+    background: rgba(40,30,20,0.38); z-index: 300;
+    align-items: center; justify-content: center;
+  }
+  .draft-panel-backdrop.open { display: flex; }
   .draft-panel {
-    background: var(--white); border-radius: 14px;
-    padding: 22px; border: 1px solid var(--border); margin-top: 16px;
-    animation: fadeUp 0.25s ease both;
+    background: var(--white); border-radius: 18px;
+    padding: 28px 26px 22px; border: 1px solid var(--border);
+    width: min(480px, calc(100vw - 48px)); max-height: 90vh; overflow-y: auto;
+    animation: fadeUp 0.22s ease both; box-shadow: 0 12px 48px rgba(0,0,0,0.18);
   }
   .draft-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
   .draft-title { font-family: 'Cormorant Garamond', serif; font-size: 17px; font-weight: 400; color: var(--text-dark); }
@@ -962,7 +969,7 @@
   <!-- PEOPLE -->
   <div class="page active" id="page-contacts">
     <div class="topbar">
-      <div class="page-title">good morning, <em>Georgia.</em></div>
+      <div class="page-title">ready for your <em>cue?</em></div>
       <button class="upload-btn" id="uploadTrigger" onclick="document.getElementById('csvInput').click()">+ import contacts</button>
       <input type="file" id="csvInput" accept=".csv" onchange="handleFile(this.files[0])"/>
     </div>
@@ -983,22 +990,6 @@
       </div>
     </div>
 
-    <div id="draftPanel" style="display:none" class="draft-panel">
-      <div class="draft-header">
-        <div class="draft-title" id="draftName">message draft</div>
-        <button class="draft-close" onclick="document.getElementById('draftPanel').style.display='none'">×</button>
-      </div>
-      <div class="draft-reason" id="draftReason"></div>
-      <div class="draft-tabs">
-        <button class="draft-tab active" onclick="setDraftMode('casual',this)">casual</button>
-        <button class="draft-tab" onclick="setDraftMode('professional',this)">professional</button>
-      </div>
-      <div class="draft-body" id="draftBody"></div>
-      <div class="draft-actions">
-        <button class="btn-primary" onclick="copyDraft()">copy message</button>
-        <button class="btn-ghost" onclick="mailDraft()">open in email</button>
-      </div>
-    </div>
   </div>
 
   <!-- COMPANIES -->
@@ -1066,6 +1057,26 @@
   </div>
 
 </main>
+
+<!-- Draft modal -->
+<div class="draft-panel-backdrop" id="draftBackdrop" onclick="closeDraftPanel(event)">
+  <div id="draftPanel" class="draft-panel">
+    <div class="draft-header">
+      <div class="draft-title" id="draftName">message draft</div>
+      <button class="draft-close" onclick="closeDraftPanel()">×</button>
+    </div>
+    <div class="draft-reason" id="draftReason"></div>
+    <div class="draft-tabs">
+      <button class="draft-tab active" onclick="setDraftMode('casual',this)">casual</button>
+      <button class="draft-tab" onclick="setDraftMode('professional',this)">professional</button>
+    </div>
+    <div class="draft-body" id="draftBody"></div>
+    <div class="draft-actions">
+      <button class="btn-primary" onclick="copyDraft()">copy message</button>
+      <button class="btn-ghost" onclick="mailDraft()">open in email</button>
+    </div>
+  </div>
+</div>
 
 <div class="copy-toast" id="copyToast">Copied to clipboard ✓</div>
 
@@ -1325,32 +1336,29 @@ async function analyzeContact(row, colMap) {
 
   const today = new Date().toISOString().split('T')[0];
 
-  const prompt = `You are a relationship intelligence assistant for a college student managing their professional network.
+  const prompt = `You are a relationship intelligence assistant for Georgia, a college student managing her professional network.
 
 Today's date: ${today}
 
-Contact info:
-- Name: ${name}
-- Company: ${company}
-- Role: ${role}
-- Last contact: ${last}
-- Notes: ${notes}
+Contact:
+- Name: ${name}${role ? `\n- Role: ${role}` : ''}${company ? `\n- Company: ${company}` : ''}${last ? `\n- Last contact: ${last}` : ''}${notes ? `\n- Notes: ${notes}` : ''}
 
 Respond ONLY with a JSON object, no markdown, no explanation:
 {
   "warmth": "warm" | "lukewarm" | "cold",
   "shouldNudge": true | false,
   "nudgeLabel": "short 2-3 word pill label",
-  "reason": "1-2 sentence explanation of WHY to reach out now, specific to this person and timing",
-  "casual": "A casual, natural 2-3 sentence message from Georgia to this person. Sound human, reference the context from notes, end with a soft ask.",
-  "professional": "A professional 2-3 sentence version of the same message. Polished but warm."
+  "reason": "1-2 sentence explanation of WHY to reach out now, specific to this person and what's in their notes",
+  "casual": "A short, personal, casual message from Georgia to ${name.split(' ')[0]}. Reference something specific from the notes — not generic. End with a natural soft ask. Under 55 words.",
+  "professional": "A short professional version. Warm but polished. Still specific to this person. Under 55 words."
 }
 
 Rules:
 - warmth = warm if last contact < 6 weeks ago, lukewarm if 6-12 weeks, cold if 12+ weeks or unknown
-- shouldNudge = true if relationship is cold/lukewarm AND there's a good reason to reach out (recruiting season, they offered to help, company signals, timing)
-- Keep messages under 60 words each
-- Do NOT use placeholder text like [Your Name] — sign off naturally or not at all`;
+- shouldNudge = true if cold/lukewarm AND there's a concrete reason to reach out now
+- Messages must feel like Georgia actually wrote them — no filler phrases like "hope things are going well", no "I wanted to reach out", no placeholder names
+- If notes mention something specific (a project, a conversation, an offer to help), reference THAT
+- Sign off naturally or not at all — never "[Your Name]"`;
 
   try {
     const proxyUrl = resolveProxyUrl();
@@ -1382,8 +1390,8 @@ Rules:
       warmth: 'lukewarm', shouldNudge: false,
       nudgeLabel: 'Check in',
       reason: 'Consider reaching out to maintain this relationship.',
-      casual: `Hey ${name.split(' ')[0]}! Just wanted to check in — hope things are going well at ${company}.`,
-      professional: `Hi ${name.split(' ')[0]}, I wanted to reach out and check in. Hope all is well at ${company}.`,
+      casual: `Hey ${name.split(' ')[0]}! Was just thinking about you — it's been a while. Would love to catch up sometime soon.`,
+      professional: `Hi ${name.split(' ')[0]}, I've been meaning to reconnect. Would love to find time to catch up — let me know what works for you.`,
       raw: row
     };
   }
@@ -1729,7 +1737,7 @@ function renderAllContacts() {
           <div class="contact-name">${safeText(c.name)}</div>
           <div class="contact-meta">
             ${c.warmth ? `<span class="warmth-dot ${warmthDotClass(c.warmth)}"></span>` : ''}
-            ${joinMeta([c.company, c.role])}
+            ${(() => { const co = c.company||''; const ro = c.role||''; const showRole = ro && !co.toLowerCase().includes(ro.toLowerCase()); return joinMeta([showRole ? ro : null, co].filter(Boolean)); })()}
           </div>
           <div class="contact-note">${safeText(c.relationship_context ? c.relationship_context.substring(0, 80) : (c.notes ? c.notes.substring(0, 80) : ''))}</div>
         </div>
@@ -1741,6 +1749,15 @@ function renderAllContacts() {
 
 
 // ─── DRAFT PANEL ─────────────────────────────────────────────────────────────
+function openDraftPanel() {
+  document.getElementById('draftBackdrop').classList.add('open');
+}
+
+function closeDraftPanel(e) {
+  if (e && e.target !== document.getElementById('draftBackdrop')) return;
+  document.getElementById('draftBackdrop').classList.remove('open');
+}
+
 function openDraft1(idx) {
   const c = analyzed[idx];
   if (!c) return;
@@ -1750,8 +1767,7 @@ function openDraft1(idx) {
   document.getElementById('draftReason').textContent = c.reason;
   document.getElementById('draftBody').textContent = c.casual;
   document.querySelectorAll('#draftPanel .draft-tab').forEach((t,i) => t.classList.toggle('active', i===0));
-  document.getElementById('draftPanel').style.display = 'block';
-  document.getElementById('draftPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  openDraftPanel();
 }
 
 
@@ -1808,42 +1824,40 @@ async function openEmailContactDraft(idx) {
     activeDraft = c;
     draftMode = 'casual';
     document.getElementById('draftName').textContent = `draft for ${c.name}`;
-    document.getElementById('draftReason').textContent = c.relationship_context || c.follow_up_hook || '';
+    document.getElementById('draftReason').textContent = c.reason || c.relationship_context || c.follow_up_hook || '';
     document.getElementById('draftBody').textContent = c.casual;
     document.querySelectorAll('#draftPanel .draft-tab').forEach((t,i) => t.classList.toggle('active', i===0));
-    document.getElementById('draftPanel').style.display = 'block';
-    document.getElementById('draftPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    openDraftPanel();
     return;
   }
 
   // Show loading state
-  const draftPanel = document.getElementById('draftPanel');
   document.getElementById('draftName').textContent = `draft for ${c.name}`;
-  document.getElementById('draftReason').textContent = 'generating…';
+  document.getElementById('draftReason').textContent = 'generating your message…';
   document.getElementById('draftBody').textContent = '';
-  draftPanel.style.display = 'block';
-  draftPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  openDraftPanel();
 
   try {
     const proxyUrl = resolveProxyUrl();
     const today = new Date().toISOString().split('T')[0];
-    const prompt = `You are a relationship intelligence assistant for a college student managing their professional network.
+    const prompt = `You are a relationship intelligence assistant for Georgia, a college student managing her professional network.
 
 Today's date: ${today}
 
-Contact info:
-- Name: ${c.name}
-- Company: ${c.company || ''}
-- Role: ${c.role || ''}
-- Context: ${c.relationship_context || c.notes || ''}
-- Follow-up: ${c.follow_up_hook || ''}
+Contact:
+- Name: ${c.name}${c.role ? `\n- Role: ${c.role}` : ''}${c.company ? `\n- Company: ${c.company}` : ''}${c.relationship_context ? `\n- How they're connected: ${c.relationship_context}` : ''}${c.follow_up_hook ? `\n- Suggested next step: ${c.follow_up_hook}` : ''}
 
 Respond ONLY with a JSON object, no markdown, no explanation:
 {
-  "reason": "1-2 sentence explanation of WHY to reach out now, specific to this person",
-  "casual": "A casual, natural 2-3 sentence message from Georgia to this person. Sound human, reference the context, end with a soft ask.",
-  "professional": "A professional 2-3 sentence version of the same message. Polished but warm."
-}`;
+  "reason": "1-2 sentence explanation of WHY to reach out now, specific to how this person is relevant",
+  "casual": "A short, personal, casual message from Georgia to ${c.name.split(' ')[0]}. Reference the relationship context specifically — not generic. End with a natural soft ask. Under 55 words.",
+  "professional": "A short professional version. Warm but polished. Still specific to this person and the context. Under 55 words."
+}
+
+Rules:
+- Messages must feel like Georgia actually wrote them — no filler phrases like "hope things are going well", no "I wanted to reach out"
+- Reference something specific from how they're connected (the intro, the project, the conversation)
+- Sign off naturally or not at all — never "[Your Name]"`;
 
     const res = await fetch(proxyUrl, {
       method: 'POST',
@@ -1870,9 +1884,11 @@ Respond ONLY with a JSON object, no markdown, no explanation:
     document.getElementById('draftReason').textContent = parsed.reason;
     document.getElementById('draftBody').textContent = parsed.casual;
     document.querySelectorAll('#draftPanel .draft-tab').forEach((t,i) => t.classList.toggle('active', i===0));
+    // Panel is already open (shown during loading state)
   } catch(e) {
     document.getElementById('draftReason').textContent = c.relationship_context || c.follow_up_hook || '';
-    document.getElementById('draftBody').textContent = `Hi ${c.name.split(' ')[0]}, just wanted to reach out and check in — hope things are going well${c.company ? ' at ' + c.company : ''}!`;
+    const fn = c.name.split(' ')[0];
+    document.getElementById('draftBody').textContent = `Hey ${fn}! Was thinking of you — ${c.relationship_context ? c.relationship_context.split('.')[0].toLowerCase() + '. ' : ''}would love to catch up soon.`;
   }
 }
 
