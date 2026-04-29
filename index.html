@@ -281,6 +281,73 @@
   .progress-fill { height: 100%; background: var(--terracotta); border-radius: 4px; transition: width 0.4s ease; }
 
   /* DRAFT PANEL */
+  /* ── CONTACT PROFILE MODAL ───────────────────────────────────────────────── */
+  .profile-backdrop {
+    display: none; position: fixed; inset: 0;
+    background: rgba(40,30,20,0.38); z-index: 300;
+    align-items: center; justify-content: center;
+  }
+  .profile-backdrop.open { display: flex; }
+  .profile-modal {
+    background: var(--white); border-radius: 20px;
+    padding: 32px 30px 26px; position: relative;
+    width: min(460px, calc(100vw - 48px));
+    box-shadow: 0 16px 56px rgba(0,0,0,0.16);
+    animation: fadeUp 0.22s ease both;
+  }
+  .profile-close {
+    position: absolute; top: 18px; right: 20px;
+    font-size: 22px; cursor: pointer; color: var(--text-xsoft);
+    background: none; border: none; line-height: 1;
+    transition: color 0.15s;
+  }
+  .profile-close:hover { color: var(--text-soft); }
+  .profile-header {
+    display: flex; align-items: center; gap: 16px; margin-bottom: 28px;
+  }
+  .profile-avatar {
+    width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 500;
+    background: var(--blush); color: var(--terracotta); letter-spacing: 0.02em;
+  }
+  .profile-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px; font-weight: 400; color: var(--text-dark); margin-bottom: 4px;
+  }
+  .profile-meta { font-size: 12px; color: var(--text-soft); }
+  .profile-field { margin-bottom: 18px; }
+  .profile-label {
+    display: block; font-size: 10px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-xsoft); margin-bottom: 6px;
+  }
+  .profile-linkedin-row { display: flex; align-items: center; gap: 8px; }
+  .profile-input {
+    width: 100%; padding: 9px 12px; border: 1px solid var(--border);
+    border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 13px;
+    color: var(--text-dark); background: var(--cream); outline: none;
+    transition: border-color 0.15s;
+  }
+  .profile-input:focus { border-color: var(--terracotta); }
+  .profile-linkedin-link {
+    font-size: 16px; color: var(--terracotta); text-decoration: none;
+    flex-shrink: 0; transition: opacity 0.15s;
+  }
+  .profile-linkedin-link:hover { opacity: 0.7; }
+  .profile-textarea {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+    border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 13px;
+    color: var(--text-dark); background: var(--cream); outline: none;
+    resize: vertical; line-height: 1.55; box-sizing: border-box;
+    transition: border-color 0.15s;
+  }
+  .profile-textarea:focus { border-color: var(--terracotta); }
+  .profile-actions {
+    display: flex; gap: 10px; margin-top: 6px; align-items: center;
+  }
+  .profile-save-btn { min-width: 70px; }
+  .profile-save-btn.saved { color: var(--green-text); border-color: var(--green-text); }
+
   .draft-panel-backdrop {
     display: none; position: fixed; inset: 0;
     background: rgba(40,30,20,0.38); z-index: 300;
@@ -1122,6 +1189,39 @@
 
 </main>
 
+<!-- Contact profile modal -->
+<div class="profile-backdrop" id="profileBackdrop" onclick="closeProfileModal(event)">
+  <div class="profile-modal" id="profileModal">
+    <button class="profile-close" onclick="closeProfileModal()">×</button>
+
+    <div class="profile-header">
+      <div class="profile-avatar" id="profileAvatar"></div>
+      <div>
+        <div class="profile-name" id="profileName"></div>
+        <div class="profile-meta" id="profileMeta"></div>
+      </div>
+    </div>
+
+    <div class="profile-field">
+      <label class="profile-label">linkedin</label>
+      <div class="profile-linkedin-row">
+        <input class="profile-input" type="url" id="profileLinkedin" placeholder="linkedin.com/in/username" />
+        <a class="profile-linkedin-link" id="profileLinkedinLink" href="#" target="_blank" style="display:none">↗</a>
+      </div>
+    </div>
+
+    <div class="profile-field">
+      <label class="profile-label">notes</label>
+      <textarea class="profile-textarea" id="profileNotes" placeholder="anything you want to remember about this person…" rows="4"></textarea>
+    </div>
+
+    <div class="profile-actions">
+      <button class="btn-ghost profile-save-btn" id="profileSaveBtn" onclick="saveProfileEdits()">save</button>
+      <button class="btn-primary" id="profileEmailBtn" onclick="profileSendEmail()">✉ send email</button>
+    </div>
+  </div>
+</div>
+
 <!-- Draft modal -->
 <div class="draft-panel-backdrop" id="draftBackdrop" onclick="closeDraftPanel(event)">
   <div id="draftPanel" class="draft-panel">
@@ -1820,7 +1920,7 @@ function renderAllContacts() {
     const hook = c.follow_up_hook || (c.shouldNudge ? c.reason : '');
 
     return `
-      <div class="contact-card" onclick="${isEmailContact ? `openEmailContactDraft(${emailContacts.indexOf(c)})` : `openDraft1(${idx})`}">
+      <div class="contact-card" onclick="${isEmailContact ? `openProfileModal('email',${emailContacts.indexOf(c)})` : `openProfileModal('csv',${idx})`}">
         ${avatarHtml(c.name)}
         <div>
           <div class="contact-name">${safeText(c.name)}</div>
@@ -1837,6 +1937,114 @@ function renderAllContacts() {
   }).join('');
 }
 
+
+// ─── CONTACT PROFILE MODAL ───────────────────────────────────────────────────
+let activeProfileContact = null;   // { contact, type: 'csv'|'email', idx }
+
+function openProfileModal(type, idx) {
+  const c = type === 'csv' ? analyzed[idx] : emailContacts[idx];
+  if (!c) return;
+  activeProfileContact = { contact: c, type, idx };
+
+  // Avatar
+  const colors = getAvatarColors(c.name || '');
+  const avatarEl = document.getElementById('profileAvatar');
+  avatarEl.style.background = colors.bg;
+  avatarEl.style.color = colors.fg;
+  avatarEl.textContent = getInitials(c.name || '');
+
+  // Name + meta
+  document.getElementById('profileName').textContent = c.name || '';
+  const co = c.company || ''; const ro = c.role || '';
+  const showRole = ro && !co.toLowerCase().includes(ro.toLowerCase());
+  document.getElementById('profileMeta').textContent = [showRole ? ro : null, co].filter(Boolean).join(' · ');
+
+  // LinkedIn
+  const li = c.linkedin || '';
+  document.getElementById('profileLinkedin').value = li;
+  updateLinkedinLink(li);
+
+  // Notes
+  document.getElementById('profileNotes').value = c.notes || '';
+
+  // Reset save button
+  const saveBtn = document.getElementById('profileSaveBtn');
+  saveBtn.textContent = 'save';
+  saveBtn.classList.remove('saved');
+
+  // Show/hide email button based on whether there's an email
+  document.getElementById('profileEmailBtn').style.display = c.email ? '' : 'none';
+
+  document.getElementById('profileBackdrop').classList.add('open');
+}
+
+function closeProfileModal(e) {
+  if (e && e.target !== document.getElementById('profileBackdrop')) return;
+  document.getElementById('profileBackdrop').classList.remove('open');
+}
+
+function updateLinkedinLink(val) {
+  const link = document.getElementById('profileLinkedinLink');
+  const trimmed = val.trim();
+  if (trimmed) {
+    const href = trimmed.startsWith('http') ? trimmed : 'https://' + trimmed;
+    link.href = href;
+    link.style.display = '';
+  } else {
+    link.style.display = 'none';
+  }
+}
+
+document.getElementById('profileLinkedin').addEventListener('input', function() {
+  updateLinkedinLink(this.value);
+});
+
+async function saveProfileEdits() {
+  if (!activeProfileContact) return;
+  const c = activeProfileContact.contact;
+  if (!c.id) return;
+
+  const linkedin = document.getElementById('profileLinkedin').value.trim();
+  const notes    = document.getElementById('profileNotes').value;
+
+  // Optimistically update the in-memory contact so reopening shows fresh data
+  c.linkedin = linkedin;
+  c.notes    = notes;
+
+  const saveBtn = document.getElementById('profileSaveBtn');
+  saveBtn.textContent = 'saving…';
+
+  try {
+    await fetch(`/api/contacts/${c.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ linkedin, notes }),
+    });
+    saveBtn.textContent = 'saved ✓';
+    saveBtn.classList.add('saved');
+    setTimeout(() => { saveBtn.textContent = 'save'; saveBtn.classList.remove('saved'); }, 2000);
+  } catch (e) {
+    saveBtn.textContent = 'save';
+    showToast('could not save — try again');
+  }
+}
+
+async function profileSendEmail() {
+  if (!activeProfileContact) return;
+  const { contact: c, type, idx } = activeProfileContact;
+
+  // Save any pending edits first
+  await saveProfileEdits();
+
+  // Close profile, open draft
+  document.getElementById('profileBackdrop').classList.remove('open');
+
+  if (type === 'csv') {
+    openDraft1(idx);
+  } else {
+    openEmailContactDraft(idx);
+  }
+}
 
 // ─── DRAFT PANEL ─────────────────────────────────────────────────────────────
 function openDraftPanel() {
