@@ -35,6 +35,16 @@ export default async function handler(req, res) {
     const conditions = [];
     const params = [];
 
+    // Always exclude the inbox owner (may be in DB from earlier ingests)
+    if (process.env.GMAIL_USER_NAME) {
+      conditions.push(`name NOT ILIKE $${params.length + 1}`);
+      params.push(process.env.GMAIL_USER_NAME);
+    }
+    if (process.env.GMAIL_USER_EMAIL) {
+      conditions.push(`(email IS NULL OR email NOT ILIKE $${params.length + 1})`);
+      params.push(process.env.GMAIL_USER_EMAIL);
+    }
+
     if (status) {
       conditions.push(`status = $${params.length + 1}`);
       params.push(status);

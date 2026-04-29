@@ -83,7 +83,8 @@ function parseEmailPayload(payload) {
 // Claude contact extraction
 // ---------------------------------------------------------------------------
 
-function buildPrompt(email, myEmail) {
+function buildPrompt(email, myEmail, myName) {
+  const ownerDesc = myName ? `${myName} (${myEmail})` : myEmail;
   return `You are a contact-intelligence assistant. Extract every person mentioned, introduced, or participating in the email below and return them as a JSON array.
 
 EMAIL:
@@ -117,13 +118,13 @@ Rules:
 • Extract emails, companies, and roles from signatures, email addresses (name@company.com), and body text.
 • relationship_context must capture WHY this person is relevant — not just their title.
 • follow_up_hook must be specific and actionable, never generic like "follow up".
-• Omit ${myEmail} — that is the inbox owner, not a contact to import.
+• Omit ${ownerDesc} — that is the inbox owner, not a contact to import. They may appear under any email address they own.
 • If a field is unknown, use null — never guess or hallucinate values.
 • Return ONLY a valid JSON array with no markdown, no explanation.`;
 }
 
-async function extractContactsWithClaude(email, myEmail) {
-  const prompt = buildPrompt(email, myEmail);
+async function extractContactsWithClaude(email, myEmail, myName) {
+  const prompt = buildPrompt(email, myEmail, myName);
 
   const resp = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -151,7 +152,15 @@ async function extractContactsWithClaude(email, myEmail) {
   const match = text.match(/\[[\s\S]*\]/);
   if (!match) throw new Error(`Claude returned no JSON array. Raw: ${text.slice(0, 300)}`);
 
-  return JSON.parse(match[0]);
+  const contacts = JSON.parse(match[0]);
+
+  // Hard-filter the inbox owner even if Claude included them anyway
+  // (they can appear under a different email address than GMAIL_USER_EMAIL)
+  return contacts.filter((c) => {
+    if (c.email && c.email.toLowerCase() === myEmail.toLowerCase()) return false;
+    if (myName && c.name && c.name.toLowerCase() === myName.toLowerCase()) return false;
+    return true;
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -283,6 +292,7 @@ export default async function handler(req, res) {
   }
 
   const myEmail = process.env.GMAIL_USER_EMAIL;
+  const myName = process.env.GMAIL_USER_NAME ?? null;   // e.g. "Georgia Messinger"
   const sql = neon(process.env.DATABASE_URL);
 
   try {
@@ -333,7 +343,7 @@ export default async function handler(req, res) {
       }
 
       // Extract contacts with Claude
-      const contacts = await extractContactsWithClaude(email, myEmail);
+      const contacts = await extractContactsWithClaude(email, myEmail, myName);
 
       // Save to database
       const savedIds = await upsertContacts(sql, contacts);
