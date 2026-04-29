@@ -293,6 +293,45 @@
     opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999;
   }
   .copy-toast.show { opacity: 1; }
+
+  /* INBOX SHELF */
+  .inbox-shelf { margin-bottom: 0; display: none; }
+
+  .shelf-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 0 14px; cursor: pointer; user-select: none;
+  }
+  .shelf-header:hover .section-title { color: var(--terracotta); }
+
+  .shelf-count {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--terracotta); color: white;
+    font-size: 10px; font-weight: 500;
+    border-radius: 10px; padding: 2px 7px; min-width: 20px;
+  }
+
+  .source-badge {
+    display: inline-block; font-size: 9px; font-weight: 400;
+    color: var(--text-xsoft); background: var(--sand);
+    border-radius: 6px; padding: 2px 6px; margin-left: 6px;
+    vertical-align: middle; letter-spacing: 0.03em;
+  }
+
+  .hook-pill {
+    font-size: 11px; padding: 5px 10px; border-radius: 20px;
+    white-space: nowrap; background: var(--blush);
+    color: var(--terracotta); font-weight: 500; text-align: center;
+    max-width: 160px; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .shelf-divider {
+    border: none; border-top: 1px solid var(--border); margin: 24px 0;
+  }
+
+  .shelf-section-label {
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text-xsoft); margin-bottom: 14px;
+  }
 </style>
 </head>
 <body>
@@ -403,11 +442,42 @@
     <div class="topbar">
       <div class="page-title">My <em>Network</em></div>
     </div>
+
+    <!-- Inbox shelf: shown when email-imported contacts exist -->
+    <div class="inbox-shelf" id="inboxShelf">
+      <div class="shelf-header" onclick="toggleShelf()">
+        <div class="section-title">From your inbox</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="shelf-count" id="shelfCount">0</span>
+          <span id="shelfToggleIcon" style="font-size:12px;color:var(--text-xsoft)">▾</span>
+        </div>
+      </div>
+      <div id="shelfBody" class="contact-list"></div>
+    </div>
+
+    <!-- Detail panel for inbox contacts -->
+    <div id="inboxPanel" style="display:none" class="draft-panel">
+      <div class="draft-header">
+        <div class="draft-title" id="inboxPanelName">Contact</div>
+        <button class="draft-close" onclick="document.getElementById('inboxPanel').style.display='none'">×</button>
+      </div>
+      <div class="draft-reason" id="inboxPanelContext"></div>
+      <div id="inboxPanelHook" style="font-size:13px;font-weight:500;color:var(--terracotta);margin-bottom:16px;padding:10px 12px;background:var(--blush);border-radius:8px;display:none"></div>
+      <div class="draft-actions" id="inboxPanelActions" style="display:none">
+        <button class="btn-primary" onclick="mailInboxContact()">Open in email</button>
+      </div>
+    </div>
+
+    <!-- Divider between shelf and CSV contacts (only when both exist) -->
+    <hr class="shelf-divider" id="shelfDivider" style="display:none"/>
+    <div id="csvSectionLabel" class="shelf-section-label" style="display:none">From CSV</div>
+
+    <!-- CSV / analyzed contacts -->
     <div class="contact-list" id="allContactsList">
       <div class="empty-state">
         <div class="e-icon">○</div>
         <div class="e-title">No contacts yet</div>
-        <div>Import a CSV from the dashboard to get started.</div>
+        <div>Import a CSV from the dashboard, or contacts will appear here as emails arrive.</div>
       </div>
     </div>
   </div>
@@ -460,9 +530,12 @@
 
 <script>
 // ─── STATE ───────────────────────────────────────────────────────────────────
-let contacts = [];       // raw CSV rows
-let analyzed = [];       // enriched with AI data
-let activeDraft = null;  // { contact, casual, professional, reason }
+let contacts = [];           // raw CSV rows
+let analyzed = [];           // enriched with AI data
+let emailContacts = [];      // contacts imported from inbox via /api/contacts
+let inboxShelfOpen = true;   // shelf collapsed/expanded state
+let activeInboxContact = null;
+let activeDraft = null;      // { contact, casual, professional, reason }
 let activeDraft2 = null;
 let draftMode = 'casual';
 let draftMode2 = 'casual';
@@ -503,6 +576,11 @@ function showPage(name, el) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   if (el) el.classList.add('active');
+  if (name === 'contacts') {
+    renderInboxShelf();
+    // Close any open detail panel on navigation
+    document.getElementById('inboxPanel').style.display = 'none';
+  }
 }
 
 // ─── FILE HANDLING ────────────────────────────────────────────────────────────
@@ -764,6 +842,11 @@ function renderAllContacts() {
   const list = document.getElementById('allContactsList');
   if (analyzed.length === 0) return;
 
+  // Show divider + "From CSV" label if inbox shelf is also populated
+  const hasBoth = emailContacts.length > 0;
+  document.getElementById('shelfDivider').style.display = hasBoth ? 'block' : 'none';
+  document.getElementById('csvSectionLabel').style.display = hasBoth ? 'block' : 'none';
+
   list.innerHTML = analyzed.map((c, i) => `
     <div class="contact-card" onclick="openDraft1(${i})">
       ${avatarHtml(c.name)}
@@ -895,11 +978,124 @@ function showToast() {
   setTimeout(() => t.classList.remove('show'), 2000);
 }
 
+// ─── INBOX SHELF ─────────────────────────────────────────────────────────────
+
+async function loadEmailContacts() {
+  try {
+    const res = await fetch('/api/contacts?source=email_import&limit=50');
+    if (!res.ok) return;
+    const data = await res.json();
+    emailContacts = data.contacts || [];
+    renderInboxShelf();
+  } catch (e) {
+    // Silently degrade — DB may not be configured in all environments
+  }
+}
+
+function renderInboxShelf() {
+  const shelf = document.getElementById('inboxShelf');
+  const divider = document.getElementById('shelfDivider');
+  const csvLabel = document.getElementById('csvSectionLabel');
+  if (!shelf) return;
+
+  if (emailContacts.length === 0) {
+    shelf.style.display = 'none';
+    divider.style.display = 'none';
+    csvLabel.style.display = 'none';
+    return;
+  }
+
+  shelf.style.display = 'block';
+  document.getElementById('shelfCount').textContent = emailContacts.length;
+
+  // Show divider and "From CSV" label only when CSV contacts also exist
+  const hasCsv = analyzed.length > 0;
+  divider.style.display = hasCsv ? 'block' : 'none';
+  csvLabel.style.display = hasCsv ? 'block' : 'none';
+
+  const body = document.getElementById('shelfBody');
+  if (!inboxShelfOpen) {
+    body.style.display = 'none';
+    document.getElementById('shelfToggleIcon').textContent = '▸';
+    return;
+  }
+
+  body.style.display = 'flex';
+  body.style.flexDirection = 'column';
+  document.getElementById('shelfToggleIcon').textContent = '▾';
+
+  body.innerHTML = emailContacts.map((c, i) => {
+    const context = c.relationship_context
+      ? safeText(c.relationship_context).substring(0, 110) + (c.relationship_context.length > 110 ? '…' : '')
+      : '';
+    const hook = c.follow_up_hook
+      ? safeText(c.follow_up_hook).substring(0, 35) + (c.follow_up_hook.length > 35 ? '…' : '')
+      : 'Follow up';
+    const lastLine = c.last_contact_date
+      ? `Last email: ${new Date(c.last_contact_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+      : '';
+    return `
+      <div class="contact-card" onclick="openInboxContact(${i})">
+        ${avatarHtml(c.name)}
+        <div>
+          <div class="contact-name">
+            ${safeText(c.name)}<span class="source-badge">📧 inbox</span>
+          </div>
+          <div class="contact-meta">${joinMeta([c.company, c.role, lastLine])}</div>
+          ${context ? `<div class="contact-note">${context}</div>` : ''}
+        </div>
+        <div class="hook-pill">${hook}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleShelf() {
+  inboxShelfOpen = !inboxShelfOpen;
+  renderInboxShelf();
+}
+
+function openInboxContact(i) {
+  const c = emailContacts[i];
+  if (!c) return;
+  activeInboxContact = c;
+
+  document.getElementById('inboxPanelName').textContent = c.name
+    + (c.company ? ` — ${c.company}` : '');
+
+  document.getElementById('inboxPanelContext').textContent =
+    c.relationship_context || 'No context captured for this contact.';
+
+  const hookEl = document.getElementById('inboxPanelHook');
+  if (c.follow_up_hook) {
+    hookEl.textContent = '→ ' + c.follow_up_hook;
+    hookEl.style.display = 'block';
+  } else {
+    hookEl.style.display = 'none';
+  }
+
+  const actionsEl = document.getElementById('inboxPanelActions');
+  actionsEl.style.display = c.email ? 'flex' : 'none';
+
+  document.getElementById('inboxPanel').style.display = 'block';
+  document.getElementById('inboxPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function mailInboxContact() {
+  if (!activeInboxContact?.email) return;
+  const to = encodeURIComponent(activeInboxContact.email);
+  const sub = encodeURIComponent('Following up');
+  window.open(`mailto:${to}?subject=${sub}`);
+}
+
 // Set brief date on load
 const now = new Date();
 const weekEnd = new Date(now); weekEnd.setDate(weekEnd.getDate() + 6);
 const fmt = d => d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 document.getElementById('briefDate') && (document.getElementById('briefDate').textContent = fmt(now));
+
+// Load email contacts on startup
+loadEmailContacts();
 </script>
 </body>
 </html>
