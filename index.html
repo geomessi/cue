@@ -49,7 +49,7 @@
     z-index: 100;
   }
 
-  .logo { padding: 0 24px 32px; }
+  .logo { padding: 0 24px 32px; cursor: pointer; }
   .logo-word {
     font-family: 'Cormorant Garamond', serif;
     font-size: 26px; font-weight: 400;
@@ -77,6 +77,16 @@
   .nav-item:hover { color: var(--text-dark); background: var(--sand); }
   .nav-item.active { color: var(--terracotta); background: var(--blush); border-left-color: var(--terracotta); font-weight: 500; }
   .nav-item .icon { font-size: 14px; width: 18px; text-align: center; opacity: 0.8; }
+
+  /* Badge for review count */
+  .badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--terracotta); color: white;
+    font-size: 10px; font-weight: 600;
+    border-radius: 10px; padding: 2px 6px; min-width: 18px;
+    margin-left: auto;
+  }
+  .badge:empty, .badge[data-count="0"] { display: none; }
 
   /* MAIN */
   .main {
@@ -123,6 +133,32 @@
   .upload-columns { font-size: 11px; color: var(--text-xsoft); letter-spacing: 0.04em; }
 
   input[type=file] { display: none; }
+
+  /* Company add section */
+  .company-add-section {
+    background: var(--white); border-radius: 14px; padding: 20px 24px;
+    border: 1px solid var(--border); margin-bottom: 32px;
+  }
+  .company-add-label {
+    font-size: 12px; font-weight: 500; color: var(--text-mid);
+    margin-bottom: 10px; letter-spacing: 0.02em;
+  }
+  .company-add-textarea {
+    width: 100%; border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 12px; font-family: 'DM Sans', sans-serif; font-size: 13px;
+    color: var(--text-dark); background: var(--cream); resize: vertical;
+    min-height: 72px; margin-bottom: 10px; outline: none;
+    transition: border-color 0.15s;
+  }
+  .company-add-textarea:focus { border-color: var(--terracotta); }
+  .company-add-btn {
+    background: var(--terracotta); color: white; border: none;
+    border-radius: 24px; padding: 8px 18px;
+    font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .company-add-btn:hover { background: var(--terra-deep); }
+  .company-add-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
   /* STATS */
   .stats-row {
@@ -257,21 +293,30 @@
   .brief-text { font-size: 12px; color: var(--text-mid); line-height: 1.55; }
   .brief-text strong { color: var(--text-dark); font-weight: 500; }
 
-  /* COMPANY */
+  /* COMPANY CARDS */
   .company-card {
     background: var(--white); border-radius: 12px; padding: 14px 16px;
     display: flex; align-items: center; gap: 12px;
     border: 1px solid var(--border); margin-bottom: 8px;
-    cursor: pointer; transition: box-shadow 0.15s;
+    transition: box-shadow 0.15s;
   }
   .company-card:hover { box-shadow: 0 2px 12px rgba(180,100,60,0.07); }
-  .company-logo { width: 36px; height: 36px; border-radius: 9px; background: var(--blush); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .company-logo { width: 36px; height: 36px; border-radius: 9px; background: var(--blush); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; overflow: hidden; }
+  .company-logo img { width: 100%; height: 100%; object-fit: contain; }
   .company-name { font-size: 13px; font-weight: 500; color: var(--text-dark); }
   .company-signal { font-size: 11px; color: var(--text-soft); margin-top: 2px; }
   .signal-badge { margin-left: auto; font-size: 10px; padding: 3px 8px; border-radius: 10px; font-weight: 500; white-space: nowrap; }
   .badge-hiring  { background: #FEF0E0; color: #B06020; }
   .badge-funding { background: var(--green-soft); color: var(--green-text); }
   .badge-active  { background: var(--blush); color: var(--terracotta); }
+
+  /* INDUSTRY/STAGE PILLS */
+  .pill {
+    display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 10px;
+    background: var(--sand); color: var(--text-mid); margin-right: 4px;
+    white-space: nowrap;
+  }
+  .pill-terra { background: var(--blush); color: var(--terracotta); }
 
   .context-banner { background: var(--blush); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; font-size: 13px; color: var(--text-mid); line-height: 1.5; border: 1px solid var(--blush-mid); }
   .context-banner strong { color: var(--text-dark); }
@@ -332,19 +377,456 @@
     font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
     color: var(--text-xsoft); margin-bottom: 14px;
   }
+
+  /* TAB BAR (My Network People/Companies) */
+  .tab-bar {
+    display: flex; gap: 4px; margin-bottom: 24px;
+    border-bottom: 1px solid var(--border); padding-bottom: 0;
+  }
+  .tab {
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 400;
+    color: var(--text-soft); padding: 8px 16px; cursor: pointer;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    transition: all 0.15s; background: none; border-top: none; border-left: none; border-right: none;
+  }
+  .tab:hover { color: var(--text-dark); }
+  .tab.active { color: var(--terracotta); font-weight: 500; border-bottom-color: var(--terracotta); }
+
+  /* ── REVIEW (TINDER) FLOW ────────────────────────────────────────────────── */
+  .review-page-wrap {
+    max-width: 480px; margin: 0 auto; text-align: center;
+  }
+
+  .review-stack {
+    position: relative; height: 520px; margin: 0 auto;
+  }
+
+  /* Ghost cards stacked behind */
+  .review-stack::before,
+  .review-stack::after {
+    content: '';
+    position: absolute; left: 50%; transform: translateX(-50%);
+    width: calc(100% - 20px); border-radius: 20px;
+    background: var(--white); border: 1px solid var(--border);
+    box-shadow: 0 3px 16px rgba(180,100,60,0.06);
+  }
+  .review-stack::before { bottom: -10px; height: 100%; z-index: 0; opacity: 0.5; transform: translateX(-50%) scale(0.95); }
+  .review-stack::after  { bottom: -5px; height: 100%; z-index: 1; opacity: 0.75; transform: translateX(-50%) scale(0.975); }
+
+  .review-card {
+    position: absolute; top: 0; left: 0; right: 0;
+    z-index: 2; perspective: 1000px;
+    /* no transform-style here — let inner handle it */
+  }
+
+  .review-card-inner {
+    position: relative; width: 100%; height: 520px;
+    transform-style: preserve-3d;
+    transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .review-card.flipped .review-card-inner {
+    transform: rotateY(180deg);
+  }
+
+  @keyframes slideOutLeft {
+    from { transform: translateX(0) rotate(0deg); opacity: 1; }
+    to   { transform: translateX(-120%) rotate(-12deg); opacity: 0; }
+  }
+  .review-card.exit-left .review-card-inner {
+    animation: slideOutLeft 0.4s ease forwards;
+  }
+
+  .review-card-front,
+  .review-card-back {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    backface-visibility: hidden;
+    background: var(--white); border-radius: 20px;
+    padding: 28px; border: 1px solid var(--border);
+    box-shadow: 0 3px 16px rgba(180,100,60,0.08);
+    overflow-y: auto;
+  }
+
+  .review-card-back {
+    transform: rotateY(180deg);
+  }
+
+  /* card front layout */
+  .rc-type-pill {
+    display: inline-block; font-size: 11px; padding: 4px 10px; border-radius: 20px;
+    background: var(--sand); color: var(--text-soft); margin-bottom: 18px;
+  }
+
+  .rc-avatar {
+    width: 72px; height: 72px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cormorant Garamond', serif; font-size: 30px; font-weight: 400;
+    margin: 0 auto 14px; background: var(--blush); color: var(--terracotta);
+  }
+  .rc-company-avatar {
+    width: 72px; height: 72px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cormorant Garamond', serif; font-size: 30px; font-weight: 400;
+    margin: 0 auto 14px; background: var(--blush); color: var(--terracotta);
+  }
+
+  .rc-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px; font-weight: 400; color: var(--text-dark);
+    margin-bottom: 4px;
+  }
+
+  .rc-sub {
+    font-size: 12px; color: var(--text-soft); margin-bottom: 18px;
+  }
+
+  .rc-context {
+    font-size: 13px; color: var(--text-mid); line-height: 1.65;
+    text-align: left; background: var(--cream); border-radius: 12px;
+    padding: 14px; margin-bottom: 16px; border: 1px solid var(--border);
+  }
+
+  .rc-hook {
+    font-size: 11px; padding: 5px 12px; border-radius: 20px;
+    background: var(--blush); color: var(--terracotta); font-weight: 500;
+    display: inline-block; margin-bottom: 6px;
+  }
+
+  /* review action buttons */
+  .review-actions {
+    display: flex; gap: 20px; justify-content: center; margin-top: 20px;
+  }
+
+  .review-action-btn {
+    width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--border);
+    background: var(--white); font-size: 24px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.18s; box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  }
+  .review-action-btn.dismiss:hover { border-color: #e05050; background: #fff0f0; transform: scale(1.08); }
+  .review-action-btn.approve:hover { border-color: var(--terracotta); background: var(--blush); transform: scale(1.08); }
+
+  /* card back: edit form */
+  .rc-back-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px; font-weight: 400; color: var(--text-dark);
+    margin-bottom: 16px;
+  }
+
+  .rc-field {
+    margin-bottom: 12px;
+  }
+  .rc-field label {
+    display: block; font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-xsoft); margin-bottom: 4px;
+  }
+  .rc-field input,
+  .rc-field textarea {
+    width: 100%; border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 10px; font-family: 'DM Sans', sans-serif; font-size: 13px;
+    color: var(--text-dark); background: var(--cream); outline: none;
+    transition: border-color 0.15s;
+  }
+  .rc-field input:focus, .rc-field textarea:focus { border-color: var(--terracotta); }
+  .rc-field textarea { resize: vertical; min-height: 60px; }
+
+  .rc-save-btn {
+    width: 100%; background: var(--terracotta); color: white; border: none;
+    border-radius: 24px; padding: 11px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: background 0.15s; margin-top: 8px;
+  }
+  .rc-save-btn:hover { background: var(--terra-deep); }
+  .rc-back-btn {
+    background: none; border: none; color: var(--text-soft); font-size: 12px;
+    cursor: pointer; margin-top: 10px; display: block; text-align: center;
+    width: 100%; padding: 4px;
+  }
+  .rc-back-btn:hover { color: var(--terracotta); }
+
+  .review-empty {
+    padding: 80px 0; text-align: center;
+  }
+  .review-empty .e-icon { font-size: 48px; margin-bottom: 16px; color: var(--text-xsoft); }
+  .review-empty .e-title { font-family: 'Cormorant Garamond', serif; font-size: 24px; color: var(--text-mid); margin-bottom: 8px; }
+  .review-empty p { font-size: 13px; color: var(--text-soft); }
+
+  /* ── CAROUSEL / ONBOARDING OVERLAY ──────────────────────────────────────── */
+  .overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: var(--cream);
+    display: flex; align-items: center; justify-content: center;
+    padding: 32px;
+  }
+  .overlay.hidden { display: none; }
+
+  .carousel-wrap {
+    max-width: 520px; width: 100%;
+    text-align: center;
+  }
+
+  .carousel-cards {
+    position: relative; overflow: hidden;
+  }
+
+  .carousel-card {
+    display: none; animation: fadeUp 0.3s ease both;
+  }
+  .carousel-card.active { display: block; }
+
+  .carousel-headline {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 56px; font-weight: 300; line-height: 1.05;
+    color: var(--terracotta); margin-bottom: 10px;
+  }
+
+  .carousel-tagline {
+    font-style: italic; color: var(--text-soft); font-size: 15px; margin-bottom: 40px;
+  }
+
+  .carousel-icon {
+    font-size: 40px; color: var(--text-xsoft); margin-bottom: 16px;
+  }
+
+  .carousel-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 32px; font-weight: 400; color: var(--text-dark); margin-bottom: 12px;
+  }
+
+  .carousel-body {
+    font-size: 15px; color: var(--text-soft); line-height: 1.7;
+    max-width: 360px; margin: 0 auto 40px;
+  }
+
+  .carousel-dots {
+    display: flex; gap: 8px; justify-content: center; margin: 28px 0 24px;
+  }
+
+  .carousel-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--blush-mid); cursor: pointer; transition: all 0.2s;
+    border: none;
+  }
+  .carousel-dot.active { background: var(--terracotta); transform: scale(1.2); }
+
+  .carousel-nav {
+    display: flex; gap: 10px; justify-content: center; align-items: center;
+  }
+
+  .carousel-nav-btn {
+    background: none; border: 1px solid var(--border); border-radius: 24px;
+    padding: 8px 20px; font-family: 'DM Sans', sans-serif; font-size: 13px;
+    color: var(--text-soft); cursor: pointer; transition: all 0.15s;
+  }
+  .carousel-nav-btn:hover { border-color: var(--terracotta); color: var(--terracotta); }
+  .carousel-nav-btn.primary-btn {
+    background: var(--terracotta); color: white; border-color: var(--terracotta);
+  }
+  .carousel-nav-btn.primary-btn:hover { background: var(--terra-deep); }
+
+  /* ── ONBOARDING STEPS ──────────────────────────────────────────────────── */
+  .onboarding-wrap {
+    max-width: 520px; width: 100%;
+  }
+
+  .onboarding-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 36px; font-weight: 300; color: var(--text-dark);
+    margin-bottom: 8px;
+  }
+
+  .onboarding-subtitle {
+    font-size: 14px; color: var(--text-soft); margin-bottom: 32px; line-height: 1.6;
+  }
+
+  /* onboarding upload zone */
+  .ob-upload-zone {
+    border: 2px dashed var(--blush-mid);
+    border-radius: 14px; padding: 40px 32px;
+    text-align: center; background: var(--white);
+    cursor: pointer; transition: all 0.15s;
+    margin-bottom: 20px;
+  }
+  .ob-upload-zone:hover, .ob-upload-zone.drag-over {
+    border-color: var(--terracotta); background: var(--blush);
+  }
+
+  .ob-skip {
+    font-size: 13px; color: var(--text-xsoft); cursor: pointer;
+    text-decoration: underline; text-underline-offset: 2px;
+    background: none; border: none; font-family: 'DM Sans', sans-serif;
+    display: block; text-align: center; width: 100%;
+  }
+  .ob-skip:hover { color: var(--text-soft); }
+
+  /* forwarding steps */
+  .onboarding-steps {
+    text-align: left; margin-bottom: 24px;
+  }
+
+  .onboarding-step {
+    display: flex; gap: 14px; align-items: flex-start;
+    margin-bottom: 16px;
+  }
+
+  .step-num {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--terracotta); color: white;
+    font-size: 11px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .step-text {
+    font-size: 13px; color: var(--text-mid); line-height: 1.6;
+  }
+
+  .email-code {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px; background: var(--sand); color: var(--text-dark);
+    padding: 3px 8px; border-radius: 6px; letter-spacing: 0.02em;
+    display: inline-block;
+  }
+
+  .copy-inline-btn {
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    padding: 2px 8px; font-size: 11px; color: var(--text-soft);
+    cursor: pointer; transition: all 0.12s; font-family: 'DM Sans', sans-serif;
+    margin-left: 6px;
+  }
+  .copy-inline-btn:hover { border-color: var(--terracotta); color: var(--terracotta); }
+
+  .ob-done-btn {
+    width: 100%; background: var(--terracotta); color: white; border: none;
+    border-radius: 28px; padding: 13px;
+    font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: background 0.15s; margin-bottom: 12px;
+  }
+  .ob-done-btn:hover { background: var(--terra-deep); }
 </style>
 </head>
 <body>
 
+<!-- ── CAROUSEL / ONBOARDING OVERLAY ──────────────────────────────────────── -->
+<div class="overlay" id="overlay">
+  <!-- Carousel (cards 0-3) -->
+  <div class="carousel-wrap" id="carouselWrap">
+    <div class="carousel-cards">
+      <!-- Card 0: meet cue -->
+      <div class="carousel-card active" data-card="0">
+        <div class="carousel-headline">meet cue.</div>
+        <div class="carousel-tagline">life's too short to miss your cue ;)</div>
+      </div>
+
+      <!-- Card 1: your people -->
+      <div class="carousel-card" data-card="1">
+        <div class="carousel-icon">○</div>
+        <div class="carousel-title">your people</div>
+        <div class="carousel-body">Every person you meet, every intro you get — tracked, enriched, and never forgotten.</div>
+      </div>
+
+      <!-- Card 2: your companies -->
+      <div class="carousel-card" data-card="2">
+        <div class="carousel-icon">◈</div>
+        <div class="carousel-title">your companies</div>
+        <div class="carousel-body">Follow the rooms you want to be in. Know who you know there.</div>
+      </div>
+
+      <!-- Card 3: your cues -->
+      <div class="carousel-card" data-card="3">
+        <div class="carousel-icon">◇</div>
+        <div class="carousel-title">your cues</div>
+        <div class="carousel-body">AI tells you exactly when and how to reach out. No more stale relationships.</div>
+      </div>
+    </div>
+
+    <div class="carousel-dots">
+      <button class="carousel-dot active" onclick="goToCard(0)"></button>
+      <button class="carousel-dot" onclick="goToCard(1)"></button>
+      <button class="carousel-dot" onclick="goToCard(2)"></button>
+      <button class="carousel-dot" onclick="goToCard(3)"></button>
+    </div>
+
+    <div class="carousel-nav" id="carouselNav">
+      <button class="carousel-nav-btn" id="carouselPrev" onclick="carouselPrev()" style="visibility:hidden">← back</button>
+      <button class="carousel-nav-btn" id="carouselNext" onclick="carouselNext()">next →</button>
+    </div>
+  </div>
+
+  <!-- Onboarding Step 1: Import contacts -->
+  <div class="onboarding-wrap" id="onboardStep1" style="display:none">
+    <div class="onboarding-title">import your people</div>
+    <div class="onboarding-subtitle">Start by uploading your contacts. We'll enrich and organize them for you.</div>
+
+    <div class="ob-upload-zone" id="obUploadZone"
+      ondragover="event.preventDefault();this.classList.add('drag-over')"
+      ondragleave="this.classList.remove('drag-over')"
+      ondrop="event.preventDefault();this.classList.remove('drag-over');handleObFile(event.dataTransfer.files[0])"
+      onclick="document.getElementById('obCsvInput').click()">
+      <div class="upload-icon">🌸</div>
+      <div class="upload-text">Drop your contacts CSV here</div>
+      <div class="upload-sub">or click to browse</div>
+      <div class="upload-columns">Name · Email · Company · Role · Last Contact · Notes</div>
+    </div>
+    <input type="file" id="obCsvInput" accept=".csv" onchange="handleObFile(this.files[0])"/>
+
+    <button class="ob-skip" onclick="advanceOnboarding()">skip for now →</button>
+  </div>
+
+  <!-- Onboarding Step 2: Connect inbox -->
+  <div class="onboarding-wrap" id="onboardStep2" style="display:none">
+    <div class="onboarding-title">connect your inbox</div>
+    <div class="onboarding-subtitle">Forward emails to Cue and we'll automatically surface everyone you meet.</div>
+
+    <div class="onboarding-steps">
+      <div class="onboarding-step">
+        <div class="step-num">1</div>
+        <div class="step-text">Open Gmail → click the ⚙️ gear → <strong>"See all settings"</strong></div>
+      </div>
+      <div class="onboarding-step">
+        <div class="step-num">2</div>
+        <div class="step-text">Go to <strong>"Forwarding and POP/IMAP"</strong> tab</div>
+      </div>
+      <div class="onboarding-step">
+        <div class="step-num">3</div>
+        <div class="step-text">
+          Click <strong>"Add a forwarding address"</strong> → enter
+          <span class="email-code">grm.secret.network@gmail.com</span>
+          <button class="copy-inline-btn" onclick="copyEmail()">copy</button>
+        </div>
+      </div>
+      <div class="onboarding-step">
+        <div class="step-num">4</div>
+        <div class="step-text">Check your inbox for Google's confirmation email and click the link</div>
+      </div>
+      <div class="onboarding-step">
+        <div class="step-num">5</div>
+        <div class="step-text">Back in Gmail Settings → Forwarding → select <strong>"Forward a copy of incoming mail"</strong></div>
+      </div>
+      <div class="onboarding-step">
+        <div class="step-num">✓</div>
+        <div class="step-text" style="color:var(--green-text)">Done! New emails will automatically feed Cue.</div>
+      </div>
+    </div>
+
+    <button class="ob-done-btn" onclick="finishOnboarding()">done, let's go →</button>
+    <button class="ob-skip" onclick="finishOnboarding()">skip for now →</button>
+  </div>
+</div>
+<!-- end overlay -->
+
 <nav class="sidebar">
-  <div class="logo">
+  <div class="logo" onclick="openCarousel()">
     <div class="logo-word">cue</div>
     <div class="logo-sub">Relationship Intelligence</div>
   </div>
   <div class="nav-section-label">Network</div>
   <a class="nav-item active" onclick="showPage('dashboard',this)"><span class="icon">◈</span> Dashboard</a>
+  <a class="nav-item" id="navReview" onclick="showPage('review',this)">
+    <span class="icon">◇</span> Review
+    <span class="badge" id="reviewBadge"></span>
+  </a>
   <a class="nav-item" onclick="showPage('contacts',this)"><span class="icon">○</span> My Network</a>
-  <a class="nav-item" onclick="showPage('nudges',this)"><span class="icon">◇</span> Nudges</a>
   <div class="nav-section-label">You</div>
   <a class="nav-item" onclick="showPage('brief',this)"><span class="icon">≡</span> Weekly Brief</a>
 </nav>
@@ -371,13 +853,20 @@
       <div class="upload-columns">Name · Email · Company · Role · Last Contact · Notes</div>
     </div>
 
+    <!-- Company add section -->
+    <div class="company-add-section" id="companyAddSection">
+      <div class="company-add-label">Add companies to track</div>
+      <textarea class="company-add-textarea" id="companyAddTextarea" placeholder="Paste company names, one per line&#10;e.g. Stripe&#10;Anthropic&#10;Figma"></textarea>
+      <button class="company-add-btn" id="companyAddBtn" onclick="addCompanies()">Add to queue</button>
+    </div>
+
     <!-- Processing bar -->
     <div class="processing-bar" id="processingBar">
       <div class="processing-label">Analyzing contacts with AI — <span id="processingStatus">0 of 0 done</span></div>
       <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
     </div>
 
-    <!-- Stats (shown after upload) -->
+    <!-- Stats (shown after upload or when active contacts exist) -->
     <div class="stats-row" id="statsRow" style="display:none">
       <div class="stat-card accent">
         <div class="stat-label">Network</div>
@@ -405,7 +894,7 @@
       <div>
         <div class="section-header">
           <div class="section-title">Who to reach out to</div>
-          <a class="section-link" onclick="showPage('nudges',document.querySelectorAll('.nav-item')[2])">All nudges →</a>
+          <a class="section-link" onclick="showPage('nudges',null)">All nudges →</a>
         </div>
         <div class="contact-list" id="nudgeList"></div>
 
@@ -437,52 +926,95 @@
     </div>
   </div>
 
+  <!-- REVIEW (tinder flow) -->
+  <div class="page" id="page-review">
+    <div class="topbar">
+      <div class="page-title">Your <em>Review</em></div>
+    </div>
+    <div class="review-page-wrap">
+      <div id="reviewContent">
+        <div class="review-stack" id="reviewStack">
+          <!-- cards injected here -->
+        </div>
+        <div class="review-actions" id="reviewActions">
+          <button class="review-action-btn dismiss" onclick="reviewDismiss()" title="Dismiss">✕</button>
+          <button class="review-action-btn approve" onclick="reviewApprove()" title="Add to network">✓</button>
+        </div>
+      </div>
+      <div class="review-empty" id="reviewEmpty" style="display:none">
+        <div class="e-icon">✓</div>
+        <div class="e-title">all caught up</div>
+        <p>nothing new to review</p>
+      </div>
+    </div>
+  </div>
+
   <!-- MY NETWORK -->
   <div class="page" id="page-contacts">
     <div class="topbar">
       <div class="page-title">My <em>Network</em></div>
     </div>
 
-    <!-- Inbox shelf: shown when email-imported contacts exist -->
-    <div class="inbox-shelf" id="inboxShelf">
-      <div class="shelf-header" onclick="toggleShelf()">
-        <div class="section-title">From your inbox</div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span class="shelf-count" id="shelfCount">0</span>
-          <span id="shelfToggleIcon" style="font-size:12px;color:var(--text-xsoft)">▾</span>
+    <!-- Tab bar: People / Companies -->
+    <div class="tab-bar">
+      <button class="tab active" onclick="switchNetworkTab('people',this)">People</button>
+      <button class="tab" onclick="switchNetworkTab('companies',this)">Companies</button>
+    </div>
+
+    <!-- People tab -->
+    <div id="networkPeopleTab">
+      <!-- Inbox shelf: shown when email-imported contacts exist -->
+      <div class="inbox-shelf" id="inboxShelf">
+        <div class="shelf-header" onclick="toggleShelf()">
+          <div class="section-title">From your inbox</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="shelf-count" id="shelfCount">0</span>
+            <span id="shelfToggleIcon" style="font-size:12px;color:var(--text-xsoft)">▾</span>
+          </div>
+        </div>
+        <div id="shelfBody" class="contact-list"></div>
+      </div>
+
+      <!-- Detail panel for inbox contacts -->
+      <div id="inboxPanel" style="display:none" class="draft-panel">
+        <div class="draft-header">
+          <div class="draft-title" id="inboxPanelName">Contact</div>
+          <button class="draft-close" onclick="document.getElementById('inboxPanel').style.display='none'">×</button>
+        </div>
+        <div class="draft-reason" id="inboxPanelContext"></div>
+        <div id="inboxPanelHook" style="font-size:13px;font-weight:500;color:var(--terracotta);margin-bottom:16px;padding:10px 12px;background:var(--blush);border-radius:8px;display:none"></div>
+        <div class="draft-actions" id="inboxPanelActions" style="display:none">
+          <button class="btn-primary" onclick="mailInboxContact()">Open in email</button>
         </div>
       </div>
-      <div id="shelfBody" class="contact-list"></div>
+
+      <!-- Divider between shelf and CSV contacts (only when both exist) -->
+      <hr class="shelf-divider" id="shelfDivider" style="display:none"/>
+      <div id="csvSectionLabel" class="shelf-section-label" style="display:none">From CSV</div>
+
+      <!-- CSV / analyzed contacts -->
+      <div class="contact-list" id="allContactsList">
+        <div class="empty-state">
+          <div class="e-icon">○</div>
+          <div class="e-title">No contacts yet</div>
+          <div>Import a CSV from the dashboard, or contacts will appear here as emails arrive.</div>
+        </div>
+      </div>
     </div>
 
-    <!-- Detail panel for inbox contacts -->
-    <div id="inboxPanel" style="display:none" class="draft-panel">
-      <div class="draft-header">
-        <div class="draft-title" id="inboxPanelName">Contact</div>
-        <button class="draft-close" onclick="document.getElementById('inboxPanel').style.display='none'">×</button>
-      </div>
-      <div class="draft-reason" id="inboxPanelContext"></div>
-      <div id="inboxPanelHook" style="font-size:13px;font-weight:500;color:var(--terracotta);margin-bottom:16px;padding:10px 12px;background:var(--blush);border-radius:8px;display:none"></div>
-      <div class="draft-actions" id="inboxPanelActions" style="display:none">
-        <button class="btn-primary" onclick="mailInboxContact()">Open in email</button>
-      </div>
-    </div>
-
-    <!-- Divider between shelf and CSV contacts (only when both exist) -->
-    <hr class="shelf-divider" id="shelfDivider" style="display:none"/>
-    <div id="csvSectionLabel" class="shelf-section-label" style="display:none">From CSV</div>
-
-    <!-- CSV / analyzed contacts -->
-    <div class="contact-list" id="allContactsList">
-      <div class="empty-state">
-        <div class="e-icon">○</div>
-        <div class="e-title">No contacts yet</div>
-        <div>Import a CSV from the dashboard, or contacts will appear here as emails arrive.</div>
+    <!-- Companies tab -->
+    <div id="networkCompaniesTab" style="display:none">
+      <div id="companiesNetworkList">
+        <div class="empty-state">
+          <div class="e-icon">◈</div>
+          <div class="e-title">No companies yet</div>
+          <div>Add companies from the dashboard, or they'll appear as emails arrive.</div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- NUDGES -->
+  <!-- NUDGES (hidden from nav but still accessible) -->
   <div class="page" id="page-nudges">
     <div class="topbar"><div class="page-title">Your <em>Nudges</em></div></div>
     <div class="context-banner" id="nudgesBanner" style="display:none"></div>
@@ -532,54 +1064,183 @@
 // ─── STATE ───────────────────────────────────────────────────────────────────
 let contacts = [];           // raw CSV rows
 let analyzed = [];           // enriched with AI data
-let emailContacts = [];      // contacts imported from inbox via /api/contacts
-let inboxShelfOpen = true;   // shelf collapsed/expanded state
+let emailContacts = [];      // active email-imported contacts
+let inboxShelfOpen = true;
 let activeInboxContact = null;
-let activeDraft = null;      // { contact, casual, professional, reason }
+let activeDraft = null;
 let activeDraft2 = null;
 let draftMode = 'casual';
 let draftMode2 = 'casual';
 
-function resolveProxyUrl() {
-  if (window.CUE_API_URL) return window.CUE_API_URL;
-  if (
-    window.location.hostname === 'localhost' ||
-    window.location.hostname === '127.0.0.1' ||
-    window.location.hostname.endsWith('.vercel.app')
-  ) {
-    return '/api/analyze';
+let reviewQueue = [];        // merged pending people + companies
+let reviewIdx = 0;           // current top-of-queue index
+
+let carouselIdx = 0;
+const CAROUSEL_TOTAL = 4;
+
+// ─── ONBOARDING ──────────────────────────────────────────────────────────────
+function openCarousel() {
+  carouselIdx = 0;
+  showCarouselCard(0);
+  document.getElementById('carouselWrap').style.display = '';
+  document.getElementById('onboardStep1').style.display = 'none';
+  document.getElementById('onboardStep2').style.display = 'none';
+  document.getElementById('overlay').classList.remove('hidden');
+}
+
+function checkOnboarded() {
+  if (!localStorage.getItem('cue_onboarded')) {
+    openCarousel();
   }
-  return null;
 }
 
-function escapeHtml(value) {
-  return String(value ?? '').replace(/[&<>"']/g, (char) => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;',
-  }[char]));
+function showCarouselCard(idx) {
+  document.querySelectorAll('.carousel-card').forEach((c, i) => {
+    c.classList.toggle('active', i === idx);
+  });
+  document.querySelectorAll('.carousel-dot').forEach((d, i) => {
+    d.classList.toggle('active', i === idx);
+  });
+  const prev = document.getElementById('carouselPrev');
+  const next = document.getElementById('carouselNext');
+  prev.style.visibility = idx === 0 ? 'hidden' : 'visible';
+
+  if (idx === CAROUSEL_TOTAL - 1) {
+    next.textContent = 'get started →';
+    next.classList.add('primary-btn');
+  } else {
+    next.textContent = 'next →';
+    next.classList.remove('primary-btn');
+  }
 }
 
-function safeText(value) {
-  return escapeHtml(value).trim();
+function goToCard(idx) {
+  carouselIdx = idx;
+  showCarouselCard(idx);
 }
 
-function joinMeta(parts) {
-  return parts.filter(Boolean).map(safeText).join(' · ');
+function carouselNext() {
+  if (carouselIdx < CAROUSEL_TOTAL - 1) {
+    carouselIdx++;
+    showCarouselCard(carouselIdx);
+  } else {
+    startOnboarding();
+  }
+}
+
+function carouselPrev() {
+  if (carouselIdx > 0) {
+    carouselIdx--;
+    showCarouselCard(carouselIdx);
+  }
+}
+
+function startOnboarding() {
+  document.getElementById('carouselWrap').style.display = 'none';
+  document.getElementById('onboardStep1').style.display = '';
+}
+
+function advanceOnboarding() {
+  document.getElementById('onboardStep1').style.display = 'none';
+  document.getElementById('onboardStep2').style.display = '';
+}
+
+function finishOnboarding() {
+  localStorage.setItem('cue_onboarded', '1');
+  document.getElementById('overlay').classList.add('hidden');
+  showPage('dashboard', document.querySelector('.nav-item'));
+}
+
+function handleObFile(file) {
+  if (!file) return;
+  handleFile(file);           // re-use same CSV logic
+  advanceOnboarding();
+}
+
+function copyEmail() {
+  navigator.clipboard.writeText('grm.secret.network@gmail.com').then(() => showToast('Copied!'));
 }
 
 // ─── NAVIGATION ──────────────────────────────────────────────────────────────
 function showPage(name, el) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('page-' + name).classList.add('active');
+  const page = document.getElementById('page-' + name);
+  if (page) page.classList.add('active');
   if (el) el.classList.add('active');
+
   if (name === 'contacts') {
     renderInboxShelf();
-    // Close any open detail panel on navigation
     document.getElementById('inboxPanel').style.display = 'none';
+  }
+  if (name === 'review') {
+    renderReviewCard();
+  }
+}
+
+// ─── MY NETWORK TABS ─────────────────────────────────────────────────────────
+function switchNetworkTab(tab, el) {
+  document.querySelectorAll('.tab-bar .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+
+  if (tab === 'people') {
+    document.getElementById('networkPeopleTab').style.display = '';
+    document.getElementById('networkCompaniesTab').style.display = 'none';
+  } else {
+    document.getElementById('networkPeopleTab').style.display = 'none';
+    document.getElementById('networkCompaniesTab').style.display = '';
+    loadNetworkCompanies();
+  }
+}
+
+async function loadNetworkCompanies() {
+  const el = document.getElementById('companiesNetworkList');
+  el.innerHTML = '<div class="empty-state"><div class="e-icon">◈</div><div class="e-title">Loading…</div></div>';
+  try {
+    const [compRes, contactRes] = await Promise.all([
+      fetch('/api/companies?status=active'),
+      fetch('/api/contacts?status=active')
+    ]);
+    const compData = compRes.ok ? await compRes.json() : { companies: [] };
+    const contactData = contactRes.ok ? await contactRes.json() : { contacts: [] };
+
+    const companies = compData.companies || [];
+    const activeContacts = contactData.contacts || [];
+
+    if (companies.length === 0) {
+      el.innerHTML = '<div class="empty-state"><div class="e-icon">◈</div><div class="e-title">No companies yet</div><div>Add companies from the dashboard, or they\'ll appear as emails arrive.</div></div>';
+      return;
+    }
+
+    el.innerHTML = companies.map(co => {
+      const peopleCount = activeContacts.filter(c =>
+        c.company && c.company.toLowerCase() === (co.name || '').toLowerCase()
+      ).length;
+
+      const logoHtml = co.website
+        ? `<img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(co.website)}&sz=64" onerror="this.style.display='none';this.nextSibling.style.display='flex'" alt="">`
+          + `<span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--terracotta)">${safeText((co.name||'').charAt(0).toUpperCase())}</span>`
+        : `<span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--terracotta)">${safeText((co.name||'').charAt(0).toUpperCase())}</span>`;
+
+      const pills = [
+        co.industry ? `<span class="pill">${safeText(co.industry)}</span>` : '',
+        co.stage    ? `<span class="pill pill-terra">${safeText(co.stage)}</span>` : '',
+      ].join('');
+
+      return `
+        <div class="company-card">
+          <div class="company-logo">${logoHtml}</div>
+          <div style="flex:1;min-width:0">
+            <div class="company-name">${safeText(co.name)}</div>
+            <div class="company-signal">${pills}</div>
+            ${co.description ? `<div style="font-size:11px;color:var(--text-soft);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${safeText(co.description)}</div>` : ''}
+          </div>
+          ${peopleCount > 0 ? `<div class="signal-badge badge-active">${peopleCount} person${peopleCount > 1 ? 's' : ''}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    el.innerHTML = '<div class="empty-state"><div class="e-icon">◈</div><div class="e-title">Could not load companies</div></div>';
   }
 }
 
@@ -598,26 +1259,21 @@ function handleFile(file) {
 
 // ─── PROCESSING ──────────────────────────────────────────────────────────────
 async function startProcessing() {
-  // Hide upload zone, show stats skeleton
   document.getElementById('uploadZone').classList.add('hidden');
   document.getElementById('statsRow').style.display = 'grid';
   document.getElementById('mainContent').style.display = 'grid';
   document.getElementById('statTotal').textContent = contacts.length;
 
-  // Show processing bar
   const bar = document.getElementById('processingBar');
   bar.classList.add('visible');
 
   analyzed = [];
   let done = 0;
 
-  // Show skeleton cards
   renderSkeletonNudges();
 
-  // Detect column names flexibly
   const colMap = buildColMap(contacts[0] || {});
 
-  // Process contacts — up to 5 in parallel for speed
   const BATCH = 3;
   for (let i = 0; i < contacts.length; i += BATCH) {
     const batch = contacts.slice(i, i + BATCH);
@@ -626,7 +1282,6 @@ async function startProcessing() {
       analyzed.push(enriched);
       done++;
       updateProgress(done, contacts.length);
-      // Re-render as they come in
       renderNudgeList();
       renderAllContacts();
       updateStats();
@@ -667,6 +1322,18 @@ function updateProgress(done, total) {
 }
 
 // ─── AI ANALYSIS ─────────────────────────────────────────────────────────────
+function resolveProxyUrl() {
+  if (window.CUE_API_URL) return window.CUE_API_URL;
+  if (
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname.endsWith('.vercel.app')
+  ) {
+    return '/api/analyze';
+  }
+  return null;
+}
+
 async function analyzeContact(row, colMap) {
   const get = (key) => colMap[key] ? (row[colMap[key]] || '').trim() : '';
 
@@ -707,7 +1374,6 @@ Rules:
 - Do NOT use placeholder text like [Your Name] — sign off naturally or not at all`;
 
   try {
-    // Calls our Vercel proxy, which adds the API key server-side
     const proxyUrl = resolveProxyUrl();
     if (!proxyUrl) {
       throw new Error('Set window.CUE_API_URL to your deployed /api/analyze endpoint before using Cue from a separate frontend host.');
@@ -732,7 +1398,6 @@ Rules:
 
     return { name, company, role, last, notes, email, ...parsed, raw: row };
   } catch (e) {
-    // Fallback if API fails
     return {
       name, company, role, last, notes, email,
       warmth: 'lukewarm', shouldNudge: false,
@@ -745,7 +1410,19 @@ Rules:
   }
 }
 
-// ─── RENDERING ───────────────────────────────────────────────────────────────
+// ─── RENDERING HELPERS ────────────────────────────────────────────────────────
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[char]));
+}
+
+function safeText(value) { return escapeHtml(value).trim(); }
+
+function joinMeta(parts) {
+  return parts.filter(Boolean).map(safeText).join(' · ');
+}
+
 function getAvatarColors(name) {
   const palettes = [
     { bg: '#F7E0D0', fg: '#C97A56' },
@@ -774,6 +1451,284 @@ function pillClass(warmth, shouldNudge) {
   return '';
 }
 
+// ─── REVIEW QUEUE ────────────────────────────────────────────────────────────
+async function loadReviewQueue() {
+  try {
+    const [pRes, cRes] = await Promise.all([
+      fetch('/api/contacts?status=pending_review'),
+      fetch('/api/companies?status=pending_review'),
+    ]);
+
+    const pendingPeople    = pRes.ok ? (await pRes.json()).contacts || [] : [];
+    const pendingCompanies = cRes.ok ? (await cRes.json()).companies || [] : [];
+
+    // People first, then companies
+    reviewQueue = [
+      ...pendingPeople.map(p => ({ ...p, _type: 'person' })),
+      ...pendingCompanies.map(c => ({ ...c, _type: 'company' })),
+    ];
+    reviewIdx = 0;
+
+    updateReviewBadge();
+    renderReviewCard();
+  } catch (e) {
+    // silently degrade
+  }
+}
+
+function updateReviewBadge() {
+  const count = reviewQueue.length - reviewIdx;
+  const badge = document.getElementById('reviewBadge');
+  badge.textContent = count > 0 ? count : '';
+}
+
+function renderReviewCard() {
+  const stack = document.getElementById('reviewStack');
+  const empty = document.getElementById('reviewEmpty');
+  const actions = document.getElementById('reviewActions');
+
+  const remaining = reviewQueue.slice(reviewIdx);
+
+  if (remaining.length === 0) {
+    stack.innerHTML = '';
+    stack.style.display = 'none';
+    actions.style.display = 'none';
+    empty.style.display = '';
+    return;
+  }
+
+  stack.style.display = 'block';
+  actions.style.display = 'flex';
+  empty.style.display = 'none';
+
+  const item = remaining[0];
+  stack.innerHTML = buildReviewCardHtml(item);
+}
+
+function buildReviewCardHtml(item) {
+  const isPerson = item._type === 'person';
+
+  const typePill = isPerson
+    ? '<span class="rc-type-pill">👤 person</span>'
+    : '<span class="rc-type-pill">🏢 company</span>';
+
+  let avatarHtml;
+  if (isPerson) {
+    const c = getAvatarColors(item.name || '?');
+    const init = (item.name || '?').charAt(0).toUpperCase();
+    avatarHtml = `<div class="rc-avatar" style="background:${c.bg};color:${c.fg}">${safeText(init)}</div>`;
+  } else {
+    const init = (item.name || '?').charAt(0).toUpperCase();
+    avatarHtml = `<div class="rc-company-avatar">${safeText(init)}</div>`;
+  }
+
+  const name = safeText(item.name || '');
+  const sub = isPerson
+    ? joinMeta([item.company, item.role])
+    : joinMeta([item.industry, item.stage]);
+
+  const mainContent = isPerson
+    ? (item.relationship_context || '')
+    : (item.description || '');
+
+  const hookOrWeb = isPerson
+    ? (item.follow_up_hook ? `<div class="rc-hook">${safeText(item.follow_up_hook)}</div>` : '')
+    : (item.website ? `<div class="rc-hook"><a href="${safeText(item.website)}" target="_blank" style="color:inherit;text-decoration:none">${safeText(item.website)}</a></div>` : '');
+
+  // Back face fields
+  const backFields = isPerson ? `
+    <div class="rc-field"><label>Name</label><input type="text" id="rcFieldName" value="${safeText(item.name||'')}"></div>
+    <div class="rc-field"><label>Company</label><input type="text" id="rcFieldCompany" value="${safeText(item.company||'')}"></div>
+    <div class="rc-field"><label>Role</label><input type="text" id="rcFieldRole" value="${safeText(item.role||'')}"></div>
+    <div class="rc-field"><label>Notes</label><textarea id="rcFieldNotes">${safeText(item.notes||'')}</textarea></div>
+  ` : `
+    <div class="rc-field"><label>Name</label><input type="text" id="rcFieldName" value="${safeText(item.name||'')}"></div>
+    <div class="rc-field"><label>Industry</label><input type="text" id="rcFieldIndustry" value="${safeText(item.industry||'')}"></div>
+    <div class="rc-field"><label>Stage</label><input type="text" id="rcFieldStage" value="${safeText(item.stage||'')}"></div>
+    <div class="rc-field"><label>Notes</label><textarea id="rcFieldNotes">${safeText(item.notes||'')}</textarea></div>
+  `;
+
+  return `
+    <div class="review-card" id="reviewCard">
+      <div class="review-card-inner">
+        <div class="review-card-front">
+          ${typePill}
+          ${avatarHtml}
+          <div class="rc-name">${name}</div>
+          ${sub ? `<div class="rc-sub">${sub}</div>` : ''}
+          ${mainContent ? `<div class="rc-context">${safeText(mainContent)}</div>` : ''}
+          ${hookOrWeb}
+        </div>
+        <div class="review-card-back">
+          <div class="rc-back-title">Add to my network</div>
+          ${backFields}
+          <button class="rc-save-btn" onclick="reviewSave()">Add to my network →</button>
+          <button class="rc-back-btn" onclick="reviewFlipBack()">← back</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function reviewApprove() {
+  const card = document.getElementById('reviewCard');
+  if (!card) return;
+  card.classList.add('flipped');
+}
+
+function reviewFlipBack() {
+  const card = document.getElementById('reviewCard');
+  if (!card) return;
+  card.classList.remove('flipped');
+}
+
+async function reviewSave() {
+  const item = reviewQueue[reviewIdx];
+  if (!item) return;
+
+  const name     = document.getElementById('rcFieldName')?.value || item.name;
+  const notes    = document.getElementById('rcFieldNotes')?.value || '';
+
+  try {
+    if (item._type === 'person') {
+      const company  = document.getElementById('rcFieldCompany')?.value || item.company;
+      const role     = document.getElementById('rcFieldRole')?.value || item.role;
+      await fetch(`/api/contacts/${item.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'active', name, company, role, notes }),
+      });
+    } else {
+      const industry = document.getElementById('rcFieldIndustry')?.value || item.industry;
+      const stage    = document.getElementById('rcFieldStage')?.value || item.stage;
+      await fetch(`/api/companies/${item.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'active', name, industry, stage, notes }),
+      });
+    }
+  } catch (e) { /* silently continue */ }
+
+  advanceReview();
+}
+
+async function reviewDismiss() {
+  const item = reviewQueue[reviewIdx];
+  if (!item) return;
+
+  const card = document.getElementById('reviewCard');
+  if (card) card.classList.add('exit-left');
+
+  // Call API after brief animation
+  setTimeout(async () => {
+    try {
+      if (item._type === 'person') {
+        await fetch(`/api/contacts/${item.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'dismissed' }),
+        });
+      } else {
+        await fetch(`/api/companies/${item.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'dismissed' }),
+        });
+      }
+    } catch (e) { /* silently continue */ }
+    advanceReview();
+  }, 380);
+}
+
+function advanceReview() {
+  reviewIdx++;
+  updateReviewBadge();
+  renderReviewCard();
+}
+
+// ─── COMPANY PASTE-IN ────────────────────────────────────────────────────────
+async function addCompanies() {
+  const textarea = document.getElementById('companyAddTextarea');
+  const btn = document.getElementById('companyAddBtn');
+  const raw = textarea.value.trim();
+  if (!raw) return;
+
+  const names = raw.split('\n').map(s => s.trim()).filter(Boolean);
+  if (names.length === 0) return;
+
+  btn.disabled = true;
+  btn.textContent = `Adding ${names.length} companies…`;
+
+  let added = 0;
+  for (const name of names) {
+    try {
+      // Create company record
+      const postRes = await fetch('/api/companies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, status: 'pending_review' }),
+      });
+      const postData = await postRes.json();
+
+      if (postData.ok && postData.company) {
+        const companyId = postData.company.id;
+        // Enrich via Claude
+        try {
+          const enrichRes = await fetch('/api/companies/enrich', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name }),
+          });
+          const enrichData = enrichRes.ok ? await enrichRes.json() : null;
+          if (enrichData && enrichData.ok !== false) {
+            await fetch(`/api/companies/${companyId}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                website: enrichData.website,
+                industry: enrichData.industry,
+                stage: enrichData.stage,
+                description: enrichData.description,
+              }),
+            });
+          }
+        } catch (e) { /* enrich failed, still created */ }
+        added++;
+      }
+    } catch (e) { /* skip this company */ }
+  }
+
+  textarea.value = '';
+  btn.disabled = false;
+  btn.textContent = 'Add to queue';
+
+  showToast(`Added ${added} compan${added === 1 ? 'y' : 'ies'} to review`);
+
+  // Reload review queue
+  await loadReviewQueue();
+}
+
+// ─── DASHBOARD STATS (from API) ───────────────────────────────────────────────
+async function loadDashboardStats() {
+  try {
+    const res = await fetch('/api/contacts?status=active&limit=500');
+    if (!res.ok) return;
+    const data = await res.json();
+    const activeCount = (data.contacts || []).length;
+
+    if (activeCount > 0 || analyzed.length > 0) {
+      document.getElementById('statsRow').style.display = 'grid';
+      document.getElementById('mainContent').style.display = 'grid';
+      document.getElementById('uploadZone').classList.add('hidden');
+    }
+
+    if (analyzed.length === 0 && activeCount > 0) {
+      document.getElementById('statTotal').textContent = activeCount;
+    }
+  } catch (e) { /* silently degrade */ }
+}
+
+// ─── RENDERING ───────────────────────────────────────────────────────────────
 function renderSkeletonNudges() {
   const list = document.getElementById('nudgeList');
   list.innerHTML = Array(3).fill(0).map(() => `
@@ -842,7 +1797,6 @@ function renderAllContacts() {
   const list = document.getElementById('allContactsList');
   if (analyzed.length === 0) return;
 
-  // Show divider + "From CSV" label if inbox shelf is also populated
   const hasBoth = emailContacts.length > 0;
   document.getElementById('shelfDivider').style.display = hasBoth ? 'block' : 'none';
   document.getElementById('csvSectionLabel').style.display = hasBoth ? 'block' : 'none';
@@ -897,7 +1851,6 @@ function renderBrief() {
 
   document.getElementById('briefItems').innerHTML = itemsHtml;
 
-  // Brief page
   document.getElementById('briefPageCard').innerHTML = `
     <div class="brief-title">Your network at a glance</div>
     <div class="brief-date" style="margin-bottom:16px">${contacts.length} contacts · ${warm.length} warm · ${nudges.length} need attention</div>
@@ -948,17 +1901,17 @@ function setDraftMode2(mode, el) {
 
 function copyDraft() {
   const text = document.getElementById('draftBody').textContent;
-  navigator.clipboard.writeText(text).then(showToast);
+  navigator.clipboard.writeText(text).then(() => showToast());
 }
 
 function copyDraft2() {
   const text = document.getElementById('draftBody2').textContent;
-  navigator.clipboard.writeText(text).then(showToast);
+  navigator.clipboard.writeText(text).then(() => showToast());
 }
 
 function mailDraft() {
   if (!activeDraft) return;
-  const sub = encodeURIComponent(`Checking in`);
+  const sub = encodeURIComponent('Checking in');
   const body = encodeURIComponent(activeDraft[draftMode]);
   const to = encodeURIComponent(activeDraft.email || '');
   window.open(`mailto:${to}?subject=${sub}&body=${body}`);
@@ -966,27 +1919,25 @@ function mailDraft() {
 
 function mailDraft2() {
   if (!activeDraft2) return;
-  const sub = encodeURIComponent(`Checking in`);
+  const sub = encodeURIComponent('Checking in');
   const body = encodeURIComponent(activeDraft2[draftMode2]);
   const to = encodeURIComponent(activeDraft2.email || '');
   window.open(`mailto:${to}?subject=${sub}&body=${body}`);
 }
 
-function showToast() {
+function showToast(msg) {
   const t = document.getElementById('copyToast');
+  t.textContent = msg || 'Copied to clipboard ✓';
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2000);
 }
 
 // ─── INBOX SHELF ─────────────────────────────────────────────────────────────
-
-// Names to always hide from the inbox shelf (the inbox owner may appear
-// in emails under a different address than GMAIL_USER_EMAIL).
 const SELF_NAMES = ['georgia messinger'];
 
 async function loadEmailContacts() {
   try {
-    const res = await fetch('/api/contacts?source=email_import&limit=50');
+    const res = await fetch('/api/contacts?status=active&source=email_import&limit=50');
     if (!res.ok) return;
     const data = await res.json();
     emailContacts = (data.contacts || []).filter(
@@ -994,7 +1945,7 @@ async function loadEmailContacts() {
     );
     renderInboxShelf();
   } catch (e) {
-    // Silently degrade — DB may not be configured in all environments
+    // Silently degrade
   }
 }
 
@@ -1014,7 +1965,6 @@ function renderInboxShelf() {
   shelf.style.display = 'block';
   document.getElementById('shelfCount').textContent = emailContacts.length;
 
-  // Show divider and "From CSV" label only when CSV contacts also exist
   const hasCsv = analyzed.length > 0;
   divider.style.display = hasCsv ? 'block' : 'none';
   csvLabel.style.display = hasCsv ? 'block' : 'none';
@@ -1094,14 +2044,18 @@ function mailInboxContact() {
   window.open(`mailto:${to}?subject=${sub}`);
 }
 
-// Set brief date on load
+// ─── INIT ─────────────────────────────────────────────────────────────────────
 const now = new Date();
-const weekEnd = new Date(now); weekEnd.setDate(weekEnd.getDate() + 6);
 const fmt = d => d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 document.getElementById('briefDate') && (document.getElementById('briefDate').textContent = fmt(now));
 
-// Load email contacts on startup
+// Load data
 loadEmailContacts();
+loadReviewQueue();
+loadDashboardStats();
+
+// Show onboarding if needed
+checkOnboarded();
 </script>
 </body>
 </html>

@@ -12,6 +12,7 @@
  */
 
 import { neon } from "@neondatabase/serverless";
+import { enrichCompany } from "../companies/enrich.js";
 
 // ---------------------------------------------------------------------------
 // Gmail REST helpers (no googleapis SDK — keeps the bundle tiny)
@@ -191,7 +192,7 @@ async function upsertContacts(sql, contacts) {
         VALUES
           (${c.name}, ${c.email}, ${c.company ?? null}, ${c.role ?? null},
            CURRENT_DATE, ${c.relationship_context ?? null},
-           ${c.follow_up_hook ?? null}, 'email_import', 'active')
+           ${c.follow_up_hook ?? null}, 'email_import', 'pending_review')
         ON CONFLICT (email) DO UPDATE SET
           name                 = EXCLUDED.name,
           company              = COALESCE(EXCLUDED.company, contacts.company),
@@ -211,7 +212,7 @@ async function upsertContacts(sql, contacts) {
         VALUES
           (${c.name}, ${c.company ?? null}, ${c.role ?? null},
            CURRENT_DATE, ${c.relationship_context ?? null},
-           ${c.follow_up_hook ?? null}, 'email_import', 'active')
+           ${c.follow_up_hook ?? null}, 'email_import', 'pending_review')
         RETURNING id
       `;
     }
@@ -353,6 +354,25 @@ export default async function handler(req, res) {
       console.log(
         `ingest: message ${messageId} ("${email.subject}") → ${savedIds.length} contacts`
       );
+
+      // Extract and enrich new companies from this email's contacts
+      const companyNames = [...new Set(contacts.filter(c => c.company).map(c => c.company))];
+      for (const companyName of companyNames) {
+        const existing = await sql`SELECT id FROM companies WHERE lower(name) = lower(${companyName})`;
+        if (existing.length === 0) {
+          try {
+            const enriched = await enrichCompany(companyName);
+            await sql`
+              INSERT INTO companies (name, website, industry, stage, description, status)
+              VALUES (${companyName}, ${enriched.website ?? null}, ${enriched.industry ?? null},
+                      ${enriched.stage ?? null}, ${enriched.description ?? null}, 'pending_review')
+              ON CONFLICT DO NOTHING
+            `;
+          } catch (e) {
+            console.warn(`ingest: could not enrich company ${companyName}:`, e.message);
+          }
+        }
+      }
     }
 
     return res.status(200).json({ ok: true, contacts: totalContacts });
