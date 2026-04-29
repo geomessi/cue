@@ -45,7 +45,14 @@ function applyCors(req, res, allowedOrigins) {
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  if (origin && allowedOrigins.includes(origin)) {
+  // Always allow same-origin requests (origin matches the host)
+  const host = req.headers.host;
+  if (!origin || (host && origin.includes(host))) {
+    res.setHeader("Access-Control-Allow-Origin", origin || "*");
+    return true;
+  }
+
+  if (allowedOrigins.includes(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     return true;
   }

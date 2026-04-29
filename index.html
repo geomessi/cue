@@ -2540,9 +2540,7 @@ Return ONLY this JSON (no markdown, no explanation before or after):
     document.querySelectorAll('#draftPanel .draft-tab').forEach((t,i) => t.classList.toggle('active', i===0));
   } catch(e) {
     console.error('[cue] draft generation failed (csv):', e);
-    // Don't cache — let them retry by clicking again
-    const fn = c.name.split(' ')[0];
-    document.getElementById('draftBody').textContent = `draft generation failed — tap "looking for a cue?" again to retry.`;
+    document.getElementById('draftBody').textContent = `error: ${e.message} — tap "looking for a cue?" again to retry.`;
   }
 }
 
@@ -2664,8 +2662,7 @@ Return ONLY this JSON (no markdown, no explanation before or after):
     document.querySelectorAll('#draftPanel .draft-tab').forEach((t,i) => t.classList.toggle('active', i===0));
   } catch(e) {
     console.error('[cue] draft generation failed (email):', e);
-    // Don't cache — let them retry by clicking again
-    document.getElementById('draftBody').textContent = `draft generation failed — tap "looking for a cue?" again to retry.`;
+    document.getElementById('draftBody').textContent = `error: ${e.message} — tap "looking for a cue?" again to retry.`;
   }
 }
 
