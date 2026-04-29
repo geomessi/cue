@@ -1295,7 +1295,7 @@
 
     <div class="profile-actions">
       <button class="btn-ghost profile-save-btn" id="profileSaveBtn" onclick="saveProfileEdits()">save</button>
-      <button class="btn-primary" id="profileEmailBtn" onclick="profileSendEmail()">✉ send email</button>
+      <button class="btn-primary" id="profileEmailBtn" onclick="profileSendEmail()">looking for a cue?</button>
     </div>
   </div>
 </div>
@@ -1366,7 +1366,6 @@
       <div class="draft-title" id="draftName">message draft</div>
       <button class="draft-close" onclick="closeDraftPanel()">×</button>
     </div>
-    <div class="draft-reason" id="draftReason"></div>
     <div class="draft-tabs">
       <button class="draft-tab active" onclick="setDraftMode('casual',this)">casual</button>
       <button class="draft-tab" onclick="setDraftMode('professional',this)">professional</button>
@@ -1730,6 +1729,18 @@ function escapeHtml(value) {
 
 function safeText(value) { return escapeHtml(value).trim(); }
 
+// Strip third-person references to Georgia before showing context on cards
+function cleanContext(text) {
+  if (!text) return '';
+  return text
+    .replace(/\bGeorgia(?:'s)?\b/gi, 'you')
+    .replace(/\bher\b/g, 'your')
+    .replace(/\bshe\b/gi, 'you')
+    .replace(/^The (primary|main|direct) recipient of [^.]+\.\s*/i, '')
+    .replace(/\bthe inbox owner\b/gi, 'you')
+    .trim();
+}
+
 function joinMeta(parts) {
   return parts.filter(Boolean).map(safeText).join(' · ');
 }
@@ -2064,8 +2075,8 @@ function renderAllContacts() {
     const showRole = ro && !co.toLowerCase().includes(ro.toLowerCase());
     const metaStr = joinMeta([showRole ? ro : null, co].filter(Boolean));
 
-    const context = c.relationship_context || c.notes || '';
-    const hook = c.follow_up_hook || (c.shouldNudge ? c.reason : '');
+    const rawContext = c.relationship_context || c.notes || '';
+    const context = cleanContext(rawContext);
 
     return `
       <div class="contact-card" onclick="${isEmailContact ? `openProfileModal('email',${emailContacts.indexOf(c)})` : `openProfileModal('csv',${idx})`}">
@@ -2077,7 +2088,6 @@ function renderAllContacts() {
             ${metaStr}
           </div>
           ${context ? `<div class="contact-context">${safeText(context)}</div>` : ''}
-          ${hook ? `<div class="contact-hook">→ ${safeText(hook)}</div>` : ''}
         </div>
         <div class="contact-chevron">›</div>
       </div>
@@ -2116,8 +2126,8 @@ function renderCues() {
     const co = c.company || ''; const ro = c.role || '';
     const showRole = ro && !co.toLowerCase().includes(ro.toLowerCase());
     const meta = [showRole ? ro : null, co].filter(Boolean).join(' · ');
-    const reason = c.reason || c.relationship_context || '';
-    const hook = c.follow_up_hook || '';
+    const rawReason = c.reason || c.relationship_context || '';
+    const reason = cleanContext(rawReason);
     const idx = isEmail(c) ? emailContacts.indexOf(c) : analyzed.indexOf(c);
     const clickFn = isEmail(c) ? `openProfileModal('email',${idx})` : `openProfileModal('csv',${idx})`;
     return `
@@ -2125,7 +2135,6 @@ function renderCues() {
         <div class="cue-card-name">${safeText(c.name)}</div>
         ${meta ? `<div class="cue-card-meta">${safeText(meta)}</div>` : ''}
         ${reason ? `<div class="cue-card-reason">${safeText(reason)}</div>` : ''}
-        ${hook ? `<div class="cue-card-hook">→ ${safeText(hook)}</div>` : ''}
       </div>
     `;
   }).join('');
@@ -2352,8 +2361,16 @@ function openProfileModal(type, idx) {
   document.getElementById('profileLinkedin').value = li;
   updateLinkedinLink(li);
 
-  // Notes
-  document.getElementById('profileNotes').value = c.notes || '';
+  // Notes — pre-populate with context + hook if no saved notes yet
+  const savedNotes = c.notes || '';
+  if (savedNotes) {
+    document.getElementById('profileNotes').value = savedNotes;
+  } else {
+    const ctx = cleanContext(c.relationship_context || c.reason || '');
+    const hook = c.follow_up_hook || '';
+    const autoNotes = [ctx, hook ? `→ ${hook}` : ''].filter(Boolean).join('\n\n');
+    document.getElementById('profileNotes').value = autoNotes;
+  }
 
   // Reset save button
   const saveBtn = document.getElementById('profileSaveBtn');
@@ -2444,16 +2461,84 @@ function closeDraftPanel(e) {
   document.getElementById('draftBackdrop').classList.remove('open');
 }
 
-function openDraft1(idx) {
+async function openDraft1(idx) {
   const c = analyzed[idx];
   if (!c) return;
-  activeDraft = c;
-  draftMode = 'casual';
-  document.getElementById('draftName').textContent = `draft for ${c.name}`;
-  document.getElementById('draftReason').textContent = c.reason;
-  document.getElementById('draftBody').textContent = c.casual;
+
+  // If we already have a bespoke draft, use it
+  if (c._draftGenerated) {
+    activeDraft = c;
+    draftMode = 'casual';
+    document.getElementById('draftName').textContent = `draft for ${c.name.split(' ')[0]}`;
+    document.getElementById('draftBody').textContent = c.casual;
+    document.querySelectorAll('#draftPanel .draft-tab').forEach((t,i) => t.classList.toggle('active', i===0));
+    openDraftPanel();
+    return;
+  }
+
+  // Show loading state immediately
+  document.getElementById('draftName').textContent = `draft for ${c.name.split(' ')[0]}`;
+  document.getElementById('draftBody').textContent = 'writing your message…';
   document.querySelectorAll('#draftPanel .draft-tab').forEach((t,i) => t.classList.toggle('active', i===0));
   openDraftPanel();
+
+  try {
+    const proxyUrl = resolveProxyUrl();
+    const notes = c.notes || '';
+    const context = c.relationship_context || c.reason || c.notes || '';
+    const hook = c.follow_up_hook || '';
+    const today = new Date().toISOString().split('T')[0];
+
+    const prompt = `You are writing a real, personal message on behalf of Georgia to ${c.name.split(' ')[0]}.
+
+Today: ${today}
+Contact: ${c.name}${c.role ? `, ${c.role}` : ''}${c.company ? ` at ${c.company}` : ''}
+Last contact: ${c.last || 'unknown'}
+Warmth: ${c.warmth || 'unknown'}
+Context: ${context}${hook ? `\nSuggested purpose: ${hook}` : ''}${notes ? `\nNotes: ${notes}` : ''}
+
+Write two versions of a message from Georgia — one casual, one professional. Rules:
+- Use the "suggested purpose" as the primary reason to reach out when it's specific and actionable. If it's vague, use the context instead to find a natural reason.
+- Reference something concrete and specific from the context — a conversation, a project, a shared connection, a specific ask. Never be generic.
+- Do NOT say "hope things are going well", "I wanted to reach out", "just checking in", or any other filler.
+- Do NOT mention Georgia's name in the message (she's the one writing it).
+- Sound human, warm, and direct. Under 60 words each.
+- Sign off naturally (first name only, or nothing) — never "[Your Name]".
+
+Respond ONLY with valid JSON, no markdown:
+{"casual": "...", "professional": "..."}`;
+
+    const res = await fetch(proxyUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 500, messages: [{ role: 'user', content: prompt }] })
+    });
+    const data = await res.json();
+    const text = data.content.map(b => b.text || '').join('');
+    const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+
+    c.casual = parsed.casual;
+    c.professional = parsed.professional;
+    c._draftGenerated = true;
+
+    activeDraft = c;
+    draftMode = 'casual';
+    document.getElementById('draftName').textContent = `draft for ${c.name.split(' ')[0]}`;
+    document.getElementById('draftBody').textContent = parsed.casual;
+    document.querySelectorAll('#draftPanel .draft-tab').forEach((t,i) => t.classList.toggle('active', i===0));
+  } catch(e) {
+    // Fallback — at least try to reference something real
+    const fn = c.name.split(' ')[0];
+    const ctx = c.relationship_context || c.reason || '';
+    const seed = ctx ? ctx.split('.')[0] : '';
+    c.casual = seed
+      ? `Hey ${fn}! ${seed}. Would love to reconnect — let me know what you're up to.`
+      : `Hey ${fn}! Been a while — would love to catch up. What are you working on these days?`;
+    c.professional = c.casual;
+    c._draftGenerated = true;
+    activeDraft = c;
+    document.getElementById('draftBody').textContent = c.casual;
+  }
 }
 
 
@@ -2512,12 +2597,11 @@ async function openEmailContactDraft(idx) {
   const c = emailContacts[idx];
   if (!c) return;
 
-  // If drafts already generated, open directly
-  if (c.casual) {
+  // If already generated, open directly
+  if (c._draftGenerated) {
     activeDraft = c;
     draftMode = 'casual';
-    document.getElementById('draftName').textContent = `draft for ${c.name}`;
-    document.getElementById('draftReason').textContent = c.reason || c.relationship_context || c.follow_up_hook || '';
+    document.getElementById('draftName').textContent = `draft for ${c.name.split(' ')[0]}`;
     document.getElementById('draftBody').textContent = c.casual;
     document.querySelectorAll('#draftPanel .draft-tab').forEach((t,i) => t.classList.toggle('active', i===0));
     openDraftPanel();
@@ -2525,63 +2609,63 @@ async function openEmailContactDraft(idx) {
   }
 
   // Show loading state
-  document.getElementById('draftName').textContent = `draft for ${c.name}`;
-  document.getElementById('draftReason').textContent = 'generating your message…';
-  document.getElementById('draftBody').textContent = '';
+  document.getElementById('draftName').textContent = `draft for ${c.name.split(' ')[0]}`;
+  document.getElementById('draftBody').textContent = 'writing your message…';
   openDraftPanel();
 
   try {
     const proxyUrl = resolveProxyUrl();
     const today = new Date().toISOString().split('T')[0];
-    const prompt = `You are a relationship intelligence assistant for Georgia, a college student managing her professional network.
+    const notes = c.notes || '';
+    const context = c.relationship_context || '';
+    const hook = c.follow_up_hook || '';
 
-Today's date: ${today}
+    const prompt = `You are writing a real, personal message on behalf of Georgia to ${c.name.split(' ')[0]}.
 
-Contact:
-- Name: ${c.name}${c.role ? `\n- Role: ${c.role}` : ''}${c.company ? `\n- Company: ${c.company}` : ''}${c.relationship_context ? `\n- How they're connected: ${c.relationship_context}` : ''}${c.follow_up_hook ? `\n- Suggested next step: ${c.follow_up_hook}` : ''}
+Today: ${today}
+Contact: ${c.name}${c.role ? `, ${c.role}` : ''}${c.company ? ` at ${c.company}` : ''}
+How they're connected: ${context}${hook ? `\nSuggested purpose: ${hook}` : ''}${notes ? `\nNotes: ${notes}` : ''}
 
-Respond ONLY with a JSON object, no markdown, no explanation:
-{
-  "reason": "1-2 sentence explanation of WHY to reach out now, specific to how this person is relevant",
-  "casual": "A short, personal, casual message from Georgia to ${c.name.split(' ')[0]}. Reference the relationship context specifically — not generic. End with a natural soft ask. Under 55 words.",
-  "professional": "A short professional version. Warm but polished. Still specific to this person and the context. Under 55 words."
-}
+Write two versions of a message from Georgia — one casual, one professional. Rules:
+- Use the "suggested purpose" as the primary reason to reach out when it's specific and actionable. If it's vague, use the connection context to find a natural angle.
+- Reference something concrete and specific — the intro, a conversation they had, a specific project or ask. Never be generic.
+- Do NOT say "hope things are going well", "I wanted to reach out", "just checking in", or any filler.
+- Do NOT mention Georgia's name in the message.
+- Sound human, warm, direct. Under 60 words each.
+- Sign off naturally (first name only, or nothing) — never "[Your Name]".
 
-Rules:
-- Messages must feel like Georgia actually wrote them — no filler phrases like "hope things are going well", no "I wanted to reach out"
-- Reference something specific from how they're connected (the intro, the project, the conversation)
-- Sign off naturally or not at all — never "[Your Name]"`;
+Respond ONLY with valid JSON, no markdown:
+{"casual": "...", "professional": "..."}`;
 
     const res = await fetch(proxyUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 600,
-        messages: [{ role: 'user', content: prompt }]
-      })
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 500, messages: [{ role: 'user', content: prompt }] })
     });
     const data = await res.json();
     const text = data.content.map(b => b.text || '').join('');
-    const clean = text.replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(clean);
+    const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
 
-    // Cache on the contact object
     c.casual = parsed.casual;
     c.professional = parsed.professional;
-    c.reason = parsed.reason;
+    c._draftGenerated = true;
 
     activeDraft = c;
     draftMode = 'casual';
-    document.getElementById('draftName').textContent = `draft for ${c.name}`;
-    document.getElementById('draftReason').textContent = parsed.reason;
+    document.getElementById('draftName').textContent = `draft for ${c.name.split(' ')[0]}`;
     document.getElementById('draftBody').textContent = parsed.casual;
     document.querySelectorAll('#draftPanel .draft-tab').forEach((t,i) => t.classList.toggle('active', i===0));
-    // Panel is already open (shown during loading state)
   } catch(e) {
-    document.getElementById('draftReason').textContent = c.relationship_context || c.follow_up_hook || '';
     const fn = c.name.split(' ')[0];
-    document.getElementById('draftBody').textContent = `Hey ${fn}! Was thinking of you — ${c.relationship_context ? c.relationship_context.split('.')[0].toLowerCase() + '. ' : ''}would love to catch up soon.`;
+    const ctx = c.relationship_context || '';
+    const seed = ctx ? ctx.split('.')[0] : '';
+    c.casual = seed
+      ? `Hey ${fn}! ${seed}. Would love to reconnect — what are you up to these days?`
+      : `Hey ${fn}! Been meaning to reach out — would love to catch up. What are you working on?`;
+    c.professional = c.casual;
+    c._draftGenerated = true;
+    activeDraft = c;
+    document.getElementById('draftBody').textContent = c.casual;
   }
 }
 
