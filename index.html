@@ -1875,10 +1875,16 @@ function copyDraft() {
 
 function mailDraft() {
   if (!activeDraft) return;
-  const sub = encodeURIComponent('Checking in');
-  const body = encodeURIComponent(activeDraft[draftMode]);
-  const to = encodeURIComponent(activeDraft.email || '');
-  window.open(`mailto:${to}?subject=${sub}&body=${body}`);
+  const email = activeDraft.email || '';
+  if (!email) {
+    showToast("no email address on file for this contact");
+    return;
+  }
+  const firstName = (activeDraft.name || '').split(' ')[0];
+  const sub = encodeURIComponent(`Hey ${firstName}`);
+  // Use whatever text is currently displayed in the draft panel
+  const body = encodeURIComponent(document.getElementById('draftBody').textContent);
+  window.open(`mailto:${encodeURIComponent(email)}?subject=${sub}&body=${body}`);
 }
 
 function showToast(msg) {
