@@ -45,8 +45,9 @@
     border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
-    padding: 36px 0 28px;
+    padding: 36px 0 0;
     z-index: 100;
+    transition: transform 0.25s ease;
   }
 
   .logo { padding: 0 24px 32px; cursor: pointer; }
@@ -99,6 +100,7 @@
     padding: 0 44px;
     z-index: 150;
     justify-content: flex-end;
+    transition: left 0.25s ease;
   }
 
   /* MAIN */
@@ -107,7 +109,13 @@
     padding: 44px 52px;
     padding-top: calc(52px + 36px);
     min-height: 100vh;
+    transition: margin-left 0.25s ease;
   }
+
+  body.sidebar-collapsed .sidebar { transform: translateX(-208px); }
+  body.sidebar-collapsed .app-header { left: 0; }
+  body.sidebar-collapsed .main { margin-left: 0; }
+  body.sidebar-collapsed #sidebarExpandBtn { display: flex !important; }
 
   .topbar {
     display: flex; align-items: baseline;
@@ -803,12 +811,39 @@
   }
   .ob-done-btn:hover { background: var(--terra-deep); }
 
+  /* ── SIDEBAR COLLAPSE ────────────────────────────────────────────────────── */
+  .sidebar-collapse-btn {
+    margin-top: auto; margin-bottom: 0;
+    align-self: flex-end;
+    background: none; border: none; cursor: pointer;
+    color: var(--text-xsoft); font-size: 18px; padding: 12px 20px 20px;
+    transition: color 0.15s; line-height: 1;
+  }
+  .sidebar-collapse-btn:hover { color: var(--text-soft); }
+
+  .sidebar-expand-btn {
+    position: fixed; top: 50%; left: 0;
+    transform: translateY(-50%);
+    background: var(--white); border: 1px solid var(--border);
+    border-left: none; border-radius: 0 8px 8px 0;
+    cursor: pointer; color: var(--text-soft); font-size: 16px;
+    padding: 10px 8px; z-index: 160;
+    transition: color 0.15s;
+  }
+  .sidebar-expand-btn:hover { color: var(--terracotta); }
+
+  .sidebar.collapsed { transform: translateX(-208px); }
+  .sidebar.collapsed ~ .app-header,
+  .sidebar.collapsed ~ .sidebar-expand-btn ~ .app-header,
+  body.sidebar-collapsed .app-header { left: 0; }
+  body.sidebar-collapsed .main { margin-left: 0; }
+
   /* ── REVIEW PILL ──────────────────────────────────────────────────────────── */
   .review-pill {
     background: var(--white); border: 1px solid var(--border);
-    border-radius: 24px; padding: 6px 14px;
-    display: flex; align-items: center; gap: 6px;
-    font-size: 12px; font-weight: 500; color: var(--text-soft);
+    border-radius: 24px; padding: 9px 18px;
+    display: flex; align-items: center; gap: 7px;
+    font-size: 13px; font-weight: 500; color: var(--text-soft);
     cursor: pointer;
     transition: all 0.15s;
   }
@@ -816,7 +851,7 @@
   .review-pill-count {
     background: var(--terracotta); color: white;
     border-radius: 10px; padding: 1px 7px;
-    font-size: 10px; font-weight: 600;
+    font-size: 11px; font-weight: 600;
     display: none;
   }
   .review-pill-count.has-items { display: inline-block; }
@@ -965,16 +1000,18 @@
 <nav class="sidebar">
   <div class="logo" onclick="openCarousel()">
     <div class="logo-word">cue</div>
-    <div class="logo-sub">relationship intelligence</div>
   </div>
-  <div class="nav-section-label">Network</div>
-  <a class="nav-item active" id="navPeople" onclick="showPage('contacts',this)"><span class="icon">○</span> people</a>
-  <a class="nav-item" id="navCompanies" onclick="showPage('contacts-companies',this)"><span class="icon">◈</span> companies</a>
+  <div class="nav-section-label">your orbit</div>
+  <a class="nav-item active" id="navPeople" onclick="showPage('contacts',this)"><span class="icon">🌚</span> people</a>
+  <a class="nav-item" id="navCompanies" onclick="showPage('contacts-companies',this)"><span class="icon">🪐</span> companies</a>
+  <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" onclick="toggleSidebar()" title="Collapse sidebar">‹</button>
 </nav>
+
+<button class="sidebar-expand-btn" id="sidebarExpandBtn" onclick="toggleSidebar()" title="Expand sidebar" style="display:none">›</button>
 
 <header class="app-header">
   <div id="reviewPill" class="review-pill" onclick="openReviewOverlay()" style="display:none">
-    <span>◇ review</span><span class="review-pill-count" id="reviewPillCount"></span>
+    <span>✨ review from your inbox</span><span class="review-pill-count" id="reviewPillCount"></span>
   </div>
 </header>
 
@@ -1194,6 +1231,18 @@ function copyEmail() {
 function copyForwardingAddress() {
   navigator.clipboard.writeText('grm.secret.network@gmail.com').then(showToast);
 }
+
+// ─── SIDEBAR ─────────────────────────────────────────────────────────────────
+function toggleSidebar() {
+  const collapsed = document.body.classList.toggle('sidebar-collapsed');
+  localStorage.setItem('cue_sidebar_collapsed', collapsed ? '1' : '');
+}
+
+(function initSidebar() {
+  if (localStorage.getItem('cue_sidebar_collapsed')) {
+    document.body.classList.add('sidebar-collapsed');
+  }
+})();
 
 // ─── NAVIGATION ──────────────────────────────────────────────────────────────
 function showPage(name, el) {
