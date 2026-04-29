@@ -378,6 +378,80 @@
     color: var(--text-xsoft); margin-bottom: 14px;
   }
 
+  /* INBOX BANNER */
+  .inbox-banner {
+    background: var(--blush); border: 1px solid var(--blush-mid);
+    border-radius: 14px; padding: 16px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; margin-bottom: 28px;
+    cursor: pointer; transition: box-shadow 0.15s, transform 0.12s;
+  }
+  .inbox-banner:hover { box-shadow: 0 3px 16px rgba(180,100,60,0.10); transform: translateY(-1px); }
+  .inbox-banner-body { flex: 1; }
+  .inbox-banner-title {
+    font-size: 13px; font-weight: 500; color: var(--text-dark); margin-bottom: 2px;
+  }
+  .inbox-banner-sub { font-size: 12px; color: var(--text-soft); }
+  .inbox-banner-arrow { font-size: 18px; color: var(--terracotta); flex-shrink: 0; }
+  .inbox-banner-dismiss {
+    background: none; border: none; font-size: 18px; color: var(--text-xsoft);
+    cursor: pointer; line-height: 1; padding: 2px 4px; flex-shrink: 0;
+  }
+  .inbox-banner-dismiss:hover { color: var(--text-soft); }
+
+  /* INBOX MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(44,26,14,0.4);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 500; animation: fadeUp 0.2s ease both;
+  }
+  .modal-card {
+    background: var(--white); border-radius: 20px;
+    padding: 36px; max-width: 460px; width: 90%;
+    position: relative; box-shadow: 0 8px 48px rgba(44,26,14,0.18);
+  }
+  .modal-close {
+    position: absolute; top: 16px; right: 20px;
+    background: none; border: none; font-size: 22px;
+    color: var(--text-xsoft); cursor: pointer; line-height: 1;
+  }
+  .modal-close:hover { color: var(--text-soft); }
+  .modal-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px; font-weight: 300; color: var(--text-dark);
+    margin-bottom: 10px;
+  }
+  .modal-sub {
+    font-size: 13px; color: var(--text-soft); line-height: 1.7;
+    margin-bottom: 28px;
+  }
+  .forwarding-box {
+    background: var(--cream); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 20px; margin-bottom: 14px;
+  }
+  .forwarding-label {
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text-xsoft); margin-bottom: 10px;
+  }
+  .forwarding-row {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .forwarding-address {
+    font-family: 'DM Mono', 'Courier New', monospace;
+    font-size: 14px; color: var(--text-dark); font-weight: 500;
+    flex: 1; letter-spacing: 0.02em;
+  }
+  .forwarding-copy-btn {
+    background: var(--terracotta); color: white; border: none;
+    border-radius: 20px; padding: 6px 14px;
+    font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 500;
+    cursor: pointer; transition: background 0.15s; flex-shrink: 0;
+  }
+  .forwarding-copy-btn:hover { background: var(--terra-deep); }
+  .forwarding-note {
+    font-size: 11px; color: var(--text-xsoft); font-style: italic; line-height: 1.5;
+  }
+
   /* TAB BAR (My Network People/Companies) */
   .tab-bar {
     display: flex; gap: 4px; margin-bottom: 24px;
@@ -843,6 +917,16 @@
       <input type="file" id="csvInput" accept=".csv" onchange="handleFile(this.files[0])"/>
     </div>
 
+    <!-- Inbox connection banner (hidden once inbox is connected or dismissed) -->
+    <div class="inbox-banner" id="inboxBanner" style="display:none" onclick="openInboxModal()">
+      <div class="inbox-banner-body">
+        <div class="inbox-banner-title">✨ want cue to work like magic?</div>
+        <div class="inbox-banner-sub">connect your inbox and we'll surface new contacts automatically</div>
+      </div>
+      <div class="inbox-banner-arrow">→</div>
+      <button class="inbox-banner-dismiss" onclick="event.stopPropagation();dismissInboxBanner()" title="dismiss">×</button>
+    </div>
+
     <!-- Upload zone (shown when no contacts) -->
     <div class="upload-zone" id="uploadZone"
       ondragover="event.preventDefault();this.classList.add('drag-over')"
@@ -1058,6 +1142,23 @@
 
 </main>
 
+<!-- Inbox connection modal -->
+<div class="modal-overlay" id="inboxModal" style="display:none" onclick="closeInboxModal()">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeInboxModal()">×</button>
+    <div class="modal-title">connect your inbox</div>
+    <div class="modal-sub">forward an intro email to cue. we'll extract everyone in it, enrich their context, and drop them into your review queue.</div>
+    <div class="forwarding-box">
+      <div class="forwarding-label">your forwarding address</div>
+      <div class="forwarding-row">
+        <div class="forwarding-address">grm.secret.network@gmail.com</div>
+        <button class="forwarding-copy-btn" onclick="copyForwardingAddress()">copy</button>
+      </div>
+    </div>
+    <div class="forwarding-note">* unique per user in production — set up once, works forever.</div>
+  </div>
+</div>
+
 <div class="copy-toast" id="copyToast">Copied to clipboard ✓</div>
 
 <script>
@@ -1141,24 +1242,57 @@ function startOnboarding() {
 }
 
 function advanceOnboarding() {
-  document.getElementById('onboardStep1').style.display = 'none';
-  document.getElementById('onboardStep2').style.display = '';
+  // Step 2 (inbox) is removed from onboarding — go straight to dashboard
+  finishOnboarding();
 }
 
 function finishOnboarding() {
   localStorage.setItem('cue_onboarded', '1');
   document.getElementById('overlay').classList.add('hidden');
   showPage('dashboard', document.querySelector('.nav-item'));
+  maybeShowInboxBanner();
 }
 
 function handleObFile(file) {
   if (!file) return;
-  handleFile(file);           // re-use same CSV logic
-  advanceOnboarding();
+  handleFile(file);
+  finishOnboarding();
 }
 
 function copyEmail() {
   navigator.clipboard.writeText('grm.secret.network@gmail.com').then(() => showToast('Copied!'));
+}
+
+// ─── INBOX BANNER + MODAL ────────────────────────────────────────────────────
+
+function maybeShowInboxBanner() {
+  if (localStorage.getItem('cue_inbox_dismissed')) return;
+  document.getElementById('inboxBanner').style.display = 'flex';
+}
+
+function dismissInboxBanner() {
+  localStorage.setItem('cue_inbox_dismissed', '1');
+  document.getElementById('inboxBanner').style.display = 'none';
+}
+
+function hideInboxBannerIfConnected(reviewItems) {
+  // Hide banner once there are email contacts in the review queue
+  const hasEmailContacts = reviewItems.some(item => item._type === 'person' && item.source === 'email_import');
+  if (hasEmailContacts) {
+    document.getElementById('inboxBanner').style.display = 'none';
+  }
+}
+
+function openInboxModal() {
+  document.getElementById('inboxModal').style.display = 'flex';
+}
+
+function closeInboxModal() {
+  document.getElementById('inboxModal').style.display = 'none';
+}
+
+function copyForwardingAddress() {
+  navigator.clipboard.writeText('grm.secret.network@gmail.com').then(showToast);
 }
 
 // ─── NAVIGATION ──────────────────────────────────────────────────────────────
@@ -1471,6 +1605,7 @@ async function loadReviewQueue() {
 
     updateReviewBadge();
     renderReviewCard();
+    hideInboxBannerIfConnected(reviewQueue);
   } catch (e) {
     // silently degrade
   }
@@ -2054,8 +2189,9 @@ loadEmailContacts();
 loadReviewQueue();
 loadDashboardStats();
 
-// Show onboarding if needed
+// Show onboarding or inbox banner
 checkOnboarded();
+if (localStorage.getItem('cue_onboarded')) maybeShowInboxBanner();
 </script>
 </body>
 </html>
