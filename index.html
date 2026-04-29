@@ -758,17 +758,16 @@
 
   <!-- Onboarding Step 1: Import contacts -->
   <div class="onboarding-wrap" id="onboardStep1" style="display:none">
-    <div class="onboarding-title">import your people</div>
-    <div class="onboarding-subtitle">Start by uploading your contacts. We'll enrich and organize them for you.</div>
+    <div class="onboarding-title">who's in your orbit?</div>
+    <div class="onboarding-subtitle">bring your people with you. upload your contacts, and we'll help enrich and organize.</div>
 
     <div class="ob-upload-zone" id="obUploadZone"
       ondragover="event.preventDefault();this.classList.add('drag-over')"
       ondragleave="this.classList.remove('drag-over')"
       ondrop="event.preventDefault();this.classList.remove('drag-over');handleObFile(event.dataTransfer.files[0])"
       onclick="document.getElementById('obCsvInput').click()">
-      <div class="upload-text">Drop your contacts CSV here</div>
+      <div class="upload-text">drop your contacts here</div>
       <div class="upload-sub">or click to browse</div>
-      <div class="upload-columns">Name · Email · Company · Role · Last Contact · Notes</div>
     </div>
     <input type="file" id="obCsvInput" accept=".csv" onchange="handleObFile(this.files[0])"/>
 
@@ -778,7 +777,7 @@
   <!-- Onboarding Step 2: Connect inbox -->
   <div class="onboarding-wrap" id="onboardStep2" style="display:none">
     <div class="onboarding-title">connect your inbox</div>
-    <div class="onboarding-subtitle">Forward emails to Cue and we'll automatically surface everyone you meet.</div>
+    <div class="onboarding-subtitle">forward emails to cue and we'll automatically surface everyone you meet.</div>
 
     <div class="onboarding-steps">
       <div class="onboarding-step">
@@ -820,7 +819,7 @@
 <nav class="sidebar">
   <div class="logo" onclick="openCarousel()">
     <div class="logo-word">cue</div>
-    <div class="logo-sub">Relationship Intelligence</div>
+    <div class="logo-sub">relationship intelligence</div>
   </div>
   <div class="nav-section-label">Network</div>
   <a class="nav-item active" onclick="showPage('dashboard',this)"><span class="icon">◈</span> Dashboard</a>
@@ -838,8 +837,8 @@
   <!-- DASHBOARD -->
   <div class="page active" id="page-dashboard">
     <div class="topbar">
-      <div class="page-title">Good morning, <em>Georgia.</em></div>
-      <button class="upload-btn" id="uploadTrigger" onclick="document.getElementById('csvInput').click()">+ Import contacts</button>
+      <div class="page-title">good morning, <em>Georgia.</em></div>
+      <button class="upload-btn" id="uploadTrigger" onclick="document.getElementById('csvInput').click()">+ import contacts</button>
       <input type="file" id="csvInput" accept=".csv" onchange="handleFile(this.files[0])"/>
     </div>
 
@@ -849,22 +848,20 @@
       ondragleave="this.classList.remove('drag-over')"
       ondrop="event.preventDefault();this.classList.remove('drag-over');handleFile(event.dataTransfer.files[0])"
       onclick="document.getElementById('csvInput').click()">
-      <div class="upload-icon">🌚</div>
-      <div class="upload-text">Drop your contacts CSV here</div>
+      <div class="upload-text">drop your contacts here</div>
       <div class="upload-sub">or click to browse</div>
-      <div class="upload-columns">Name · Email · Company · Role · Last Contact · Notes</div>
     </div>
 
     <!-- Company add section -->
     <div class="company-add-section" id="companyAddSection">
-      <div class="company-add-label">Add companies to track</div>
+      <div class="company-add-label">add companies to track</div>
       <textarea class="company-add-textarea" id="companyAddTextarea" placeholder="Paste company names, one per line&#10;e.g. Stripe&#10;Anthropic&#10;Figma"></textarea>
       <button class="company-add-btn" id="companyAddBtn" onclick="addCompanies()">Add to queue</button>
     </div>
 
     <!-- Processing bar -->
     <div class="processing-bar" id="processingBar">
-      <div class="processing-label">Analyzing contacts with AI — <span id="processingStatus">0 of 0 done</span></div>
+      <div class="processing-label">analyzing contacts with AI — <span id="processingStatus">0 of 0 done</span></div>
       <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
     </div>
 
@@ -895,32 +892,32 @@
     <div class="two-col" id="mainContent" style="display:none">
       <div>
         <div class="section-header">
-          <div class="section-title">Who to reach out to</div>
-          <a class="section-link" onclick="showPage('nudges',null)">All nudges →</a>
+          <div class="section-title">who to reach out to</div>
+          <a class="section-link" onclick="showPage('nudges',null)">all nudges →</a>
         </div>
         <div class="contact-list" id="nudgeList"></div>
 
         <div id="draftPanel" style="display:none" class="draft-panel">
           <div class="draft-header">
-            <div class="draft-title" id="draftName">Message draft</div>
+            <div class="draft-title" id="draftName">message draft</div>
             <button class="draft-close" onclick="document.getElementById('draftPanel').style.display='none'">×</button>
           </div>
           <div class="draft-reason" id="draftReason"></div>
           <div class="draft-tabs">
-            <button class="draft-tab active" onclick="setDraftMode('casual',this)">Casual</button>
-            <button class="draft-tab" onclick="setDraftMode('professional',this)">Professional</button>
+            <button class="draft-tab active" onclick="setDraftMode('casual',this)">casual</button>
+            <button class="draft-tab" onclick="setDraftMode('professional',this)">professional</button>
           </div>
           <div class="draft-body" id="draftBody"></div>
           <div class="draft-actions">
-            <button class="btn-primary" onclick="copyDraft()">Copy message</button>
-            <button class="btn-ghost" onclick="mailDraft()">Open in email</button>
+            <button class="btn-primary" onclick="copyDraft()">copy message</button>
+            <button class="btn-ghost" onclick="mailDraft()">open in email</button>
           </div>
         </div>
       </div>
 
       <div>
         <div class="brief-card" id="weeklyBriefCard">
-          <div class="brief-title">This week's brief</div>
+          <div class="brief-title">this week's brief</div>
           <div class="brief-date" id="briefDate"></div>
           <div id="briefItems"></div>
         </div>
@@ -931,7 +928,7 @@
   <!-- REVIEW (tinder flow) -->
   <div class="page" id="page-review">
     <div class="topbar">
-      <div class="page-title">Your <em>Review</em></div>
+      <div class="page-title">your <em>review</em></div>
     </div>
     <div class="review-page-wrap">
       <div id="reviewContent">
@@ -954,13 +951,13 @@
   <!-- MY NETWORK -->
   <div class="page" id="page-contacts">
     <div class="topbar">
-      <div class="page-title">My <em>Network</em></div>
+      <div class="page-title">my <em>network</em></div>
     </div>
 
     <!-- Tab bar: People / Companies -->
     <div class="tab-bar">
-      <button class="tab active" onclick="switchNetworkTab('people',this)">People</button>
-      <button class="tab" onclick="switchNetworkTab('companies',this)">Companies</button>
+      <button class="tab active" onclick="switchNetworkTab('people',this)">people</button>
+      <button class="tab" onclick="switchNetworkTab('companies',this)">companies</button>
     </div>
 
     <!-- People tab -->
@@ -968,7 +965,7 @@
       <!-- Inbox shelf: shown when email-imported contacts exist -->
       <div class="inbox-shelf" id="inboxShelf">
         <div class="shelf-header" onclick="toggleShelf()">
-          <div class="section-title">From your inbox</div>
+          <div class="section-title">from your inbox</div>
           <div style="display:flex;align-items:center;gap:8px">
             <span class="shelf-count" id="shelfCount">0</span>
             <span id="shelfToggleIcon" style="font-size:12px;color:var(--text-xsoft)">▾</span>
@@ -992,14 +989,14 @@
 
       <!-- Divider between shelf and CSV contacts (only when both exist) -->
       <hr class="shelf-divider" id="shelfDivider" style="display:none"/>
-      <div id="csvSectionLabel" class="shelf-section-label" style="display:none">From CSV</div>
+      <div id="csvSectionLabel" class="shelf-section-label" style="display:none">from csv</div>
 
       <!-- CSV / analyzed contacts -->
       <div class="contact-list" id="allContactsList">
         <div class="empty-state">
           <div class="e-icon">○</div>
-          <div class="e-title">No contacts yet</div>
-          <div>Import a CSV from the dashboard, or contacts will appear here as emails arrive.</div>
+          <div class="e-title">no contacts yet</div>
+          <div>import a csv from the dashboard, or contacts will appear here as emails arrive.</div>
         </div>
       </div>
     </div>
@@ -1009,8 +1006,8 @@
       <div id="companiesNetworkList">
         <div class="empty-state">
           <div class="e-icon">◈</div>
-          <div class="e-title">No companies yet</div>
-          <div>Add companies from the dashboard, or they'll appear as emails arrive.</div>
+          <div class="e-title">no companies yet</div>
+          <div>add companies from the dashboard, or they'll appear as emails arrive.</div>
         </div>
       </div>
     </div>
@@ -1018,42 +1015,42 @@
 
   <!-- NUDGES (hidden from nav but still accessible) -->
   <div class="page" id="page-nudges">
-    <div class="topbar"><div class="page-title">Your <em>Nudges</em></div></div>
+    <div class="topbar"><div class="page-title">your <em>nudges</em></div></div>
     <div class="context-banner" id="nudgesBanner" style="display:none"></div>
     <div class="contact-list" id="nudgesPageList">
       <div class="empty-state">
         <div class="e-icon">◇</div>
-        <div class="e-title">No nudges yet</div>
-        <div>Import a CSV and AI will surface who to reach out to.</div>
+        <div class="e-title">no nudges yet</div>
+        <div>import a csv and AI will surface who to reach out to.</div>
       </div>
     </div>
     <div id="draftPanel2" style="display:none" class="draft-panel">
       <div class="draft-header">
-        <div class="draft-title" id="draftName2">Message draft</div>
+        <div class="draft-title" id="draftName2">message draft</div>
         <button class="draft-close" onclick="document.getElementById('draftPanel2').style.display='none'">×</button>
       </div>
       <div class="draft-reason" id="draftReason2"></div>
       <div class="draft-tabs">
-        <button class="draft-tab active" onclick="setDraftMode2('casual',this)">Casual</button>
-        <button class="draft-tab" onclick="setDraftMode2('professional',this)">Professional</button>
+        <button class="draft-tab active" onclick="setDraftMode2('casual',this)">casual</button>
+        <button class="draft-tab" onclick="setDraftMode2('professional',this)">professional</button>
       </div>
       <div class="draft-body" id="draftBody2"></div>
       <div class="draft-actions">
-        <button class="btn-primary" onclick="copyDraft2()">Copy message</button>
-        <button class="btn-ghost" onclick="mailDraft2()">Open in email</button>
+        <button class="btn-primary" onclick="copyDraft2()">copy message</button>
+        <button class="btn-ghost" onclick="mailDraft2()">open in email</button>
       </div>
     </div>
   </div>
 
   <!-- WEEKLY BRIEF -->
   <div class="page" id="page-brief">
-    <div class="topbar"><div class="page-title">Weekly <em>Brief</em></div></div>
+    <div class="topbar"><div class="page-title">weekly <em>brief</em></div></div>
     <div style="font-size:11px;color:var(--text-xsoft);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:24px;" id="briefPageDate"></div>
     <div class="brief-card" id="briefPageCard">
       <div class="empty-state">
         <div class="e-icon">≡</div>
-        <div class="e-title">No brief yet</div>
-        <div>Import your contacts to generate your weekly brief.</div>
+        <div class="e-title">no brief yet</div>
+        <div>import your contacts to generate your weekly brief.</div>
       </div>
     </div>
   </div>
@@ -1197,7 +1194,7 @@ function switchNetworkTab(tab, el) {
 
 async function loadNetworkCompanies() {
   const el = document.getElementById('companiesNetworkList');
-  el.innerHTML = '<div class="empty-state"><div class="e-icon">◈</div><div class="e-title">Loading…</div></div>';
+  el.innerHTML = '<div class="empty-state"><div class="e-icon">◈</div><div class="e-title">loading…</div></div>';
   try {
     const [compRes, contactRes] = await Promise.all([
       fetch('/api/companies?status=active'),
@@ -1210,7 +1207,7 @@ async function loadNetworkCompanies() {
     const activeContacts = contactData.contacts || [];
 
     if (companies.length === 0) {
-      el.innerHTML = '<div class="empty-state"><div class="e-icon">◈</div><div class="e-title">No companies yet</div><div>Add companies from the dashboard, or they\'ll appear as emails arrive.</div></div>';
+      el.innerHTML = '<div class="empty-state"><div class="e-icon">◈</div><div class="e-title">no companies yet</div><div>Add companies from the dashboard, or they\'ll appear as emails arrive.</div></div>';
       return;
     }
 
@@ -1242,7 +1239,7 @@ async function loadNetworkCompanies() {
       `;
     }).join('');
   } catch (e) {
-    el.innerHTML = '<div class="empty-state"><div class="e-icon">◈</div><div class="e-title">Could not load companies</div></div>';
+    el.innerHTML = '<div class="empty-state"><div class="e-icon">◈</div><div class="e-title">could not load companies</div></div>';
   }
 }
 
@@ -1756,7 +1753,7 @@ function renderNudgeList() {
   }
 
   if (nudges.length === 0) {
-    list.innerHTML = `<div class="empty-state"><div class="e-icon">✓</div><div class="e-title">All caught up!</div><div>No urgent nudges right now.</div></div>`;
+    list.innerHTML = `<div class="empty-state"><div class="e-icon">✓</div><div class="e-title">all caught up!</div><div>no urgent nudges right now.</div></div>`;
     return;
   }
 
@@ -1854,7 +1851,7 @@ function renderBrief() {
   document.getElementById('briefItems').innerHTML = itemsHtml;
 
   document.getElementById('briefPageCard').innerHTML = `
-    <div class="brief-title">Your network at a glance</div>
+    <div class="brief-title">your network at a glance</div>
     <div class="brief-date" style="margin-bottom:16px">${contacts.length} contacts · ${warm.length} warm · ${nudges.length} need attention</div>
     ${itemsHtml}
   `;
@@ -1866,7 +1863,7 @@ function openDraft1(idx) {
   if (!c) return;
   activeDraft = c;
   draftMode = 'casual';
-  document.getElementById('draftName').textContent = `Draft for ${c.name}`;
+  document.getElementById('draftName').textContent = `draft for ${c.name}`;
   document.getElementById('draftReason').textContent = c.reason;
   document.getElementById('draftBody').textContent = c.casual;
   document.querySelectorAll('#draftPanel .draft-tab').forEach((t,i) => t.classList.toggle('active', i===0));
@@ -1879,7 +1876,7 @@ function openDraft2Page(idx) {
   if (!c) return;
   activeDraft2 = c;
   draftMode2 = 'casual';
-  document.getElementById('draftName2').textContent = `Draft for ${c.name}`;
+  document.getElementById('draftName2').textContent = `draft for ${c.name}`;
   document.getElementById('draftReason2').textContent = c.reason;
   document.getElementById('draftBody2').textContent = c.casual;
   document.querySelectorAll('#draftPanel2 .draft-tab').forEach((t,i) => t.classList.toggle('active', i===0));
