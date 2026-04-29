@@ -30,6 +30,7 @@ export default async function handler(req, res) {
     stage,
     description,
     notes,
+    category,
   } = req.body || {};
 
   const sql = neon(process.env.DATABASE_URL);
@@ -44,6 +45,7 @@ export default async function handler(req, res) {
         stage       = COALESCE(${stage ?? null}, stage),
         description = COALESCE(${description ?? null}, description),
         notes       = COALESCE(${notes ?? null}, notes),
+        category    = COALESCE(${category ?? null}, category),
         updated_at  = NOW()
       WHERE id = ${id}
       RETURNING *

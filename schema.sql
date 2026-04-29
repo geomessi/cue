@@ -61,3 +61,5 @@ UPDATE contacts SET status = 'pending_review' WHERE source = 'email_import' AND 
 
 -- Migration: add linkedin URL field
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS linkedin TEXT;
+
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS category TEXT;

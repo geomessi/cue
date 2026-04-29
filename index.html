@@ -205,6 +205,35 @@
   .section-title { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 400; color: var(--text-dark); }
   .section-link { font-size: 11px; color: var(--terracotta); cursor: pointer; text-decoration: none; opacity: 0.8; }
 
+  /* ── CUES SECTION ─────────────────────────────────────────────────────────── */
+  .cues-header {
+    display: flex; align-items: baseline; gap: 12px; margin-bottom: 16px;
+  }
+  .cues-title {
+    font-family: 'Cormorant Garamond', serif; font-size: 17px;
+    font-weight: 400; color: var(--terracotta);
+  }
+  .cues-sub { font-size: 11px; color: var(--text-xsoft); }
+  .cue-cards {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px; margin-bottom: 24px;
+  }
+  .cue-card {
+    background: var(--white); border-radius: 14px;
+    border: 1px solid var(--border); border-left: 3px solid var(--terracotta);
+    padding: 16px 18px; cursor: pointer;
+    transition: box-shadow 0.15s, transform 0.12s;
+  }
+  .cue-card:hover { box-shadow: 0 4px 20px rgba(180,100,60,0.10); transform: translateY(-1px); }
+  .cue-card-name { font-size: 14px; font-weight: 500; color: var(--text-dark); margin-bottom: 3px; }
+  .cue-card-meta { font-size: 11px; color: var(--text-soft); margin-bottom: 8px; }
+  .cue-card-reason {
+    font-size: 12px; color: var(--text-mid); line-height: 1.5;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .cue-card-hook { font-size: 11px; color: var(--terracotta); margin-top: 8px; font-style: italic; }
+  .cues-divider { height: 1px; background: var(--border); margin-bottom: 28px; }
+
   /* CONTACT CARDS */
   .contact-list { display: flex; flex-direction: column; gap: 10px; }
 
@@ -347,6 +376,43 @@
   }
   .profile-save-btn { min-width: 70px; }
   .profile-save-btn.saved { color: var(--green-text); border-color: var(--green-text); }
+
+  .company-modal-logo {
+    width: 52px; height: 52px; border-radius: 12px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--sand); color: var(--terracotta);
+    font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 400;
+    overflow: hidden;
+  }
+  .company-modal-logo img { width: 100%; height: 100%; object-fit: contain; }
+  .category-pills { display: flex; flex-wrap: wrap; gap: 7px; }
+  .category-pill {
+    font-size: 11px; padding: 5px 12px; border-radius: 20px; cursor: pointer;
+    border: 1px solid var(--border); color: var(--text-soft);
+    background: transparent; font-family: 'DM Sans', sans-serif;
+    transition: all 0.12s;
+  }
+  .category-pill:hover { border-color: var(--terracotta); color: var(--terracotta); }
+  .category-pill.active { background: var(--terracotta); color: white; border-color: var(--terracotta); }
+  .company-people-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+  .company-person-row {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; color: var(--text-mid);
+    cursor: pointer; padding: 6px 0; border-bottom: 1px solid var(--border);
+  }
+  .company-person-row:last-child { border-bottom: none; }
+  .company-person-row:hover .cp-name { color: var(--terracotta); }
+  .cp-avatar {
+    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cormorant Garamond', serif; font-size: 11px; font-weight: 500;
+  }
+  .cp-name { font-weight: 500; color: var(--text-dark); }
+  .cp-role { font-size: 11px; color: var(--text-soft); margin-left: auto; }
+
+  .watchlist-badge {
+    font-size: 12px; margin-left: 6px; vertical-align: middle; opacity: 0.8;
+  }
 
   .draft-panel-backdrop {
     display: none; position: fixed; inset: 0;
@@ -1111,6 +1177,16 @@
       <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
     </div>
 
+    <!-- Cues for you section -->
+    <div id="cuesSection" style="display:none">
+      <div class="cues-header">
+        <span class="cues-title">✦ cues for you</span>
+        <span class="cues-sub">people worth reaching out to today</span>
+      </div>
+      <div class="cue-cards" id="cueCards"></div>
+      <div class="cues-divider"></div>
+    </div>
+
     <!-- CSV / analyzed contacts -->
     <div class="contact-list" id="allContactsList">
       <div class="empty-state">
@@ -1222,6 +1298,47 @@
   </div>
 </div>
 
+<!-- Company profile modal -->
+<div class="profile-backdrop" id="companyBackdrop" onclick="closeCompanyModal(event)">
+  <div class="profile-modal" id="companyModal">
+    <button class="profile-close" onclick="closeCompanyModal()">×</button>
+
+    <div class="profile-header">
+      <div class="company-modal-logo" id="companyModalLogo"></div>
+      <div>
+        <div class="profile-name" id="companyModalName"></div>
+        <div class="profile-meta" id="companyModalMeta"></div>
+      </div>
+    </div>
+
+    <div class="profile-field">
+      <label class="profile-label">category</label>
+      <div class="category-pills" id="categoryPills">
+        <button class="category-pill" data-cat="Target Employer" onclick="selectCategory(this)">Target Employer</button>
+        <button class="category-pill" data-cat="Investment Target" onclick="selectCategory(this)">Investment Target</button>
+        <button class="category-pill" data-cat="Competitive" onclick="selectCategory(this)">Competitive</button>
+        <button class="category-pill" data-cat="Partner" onclick="selectCategory(this)">Partner</button>
+        <button class="category-pill" data-cat="General Interest" onclick="selectCategory(this)">General Interest</button>
+      </div>
+    </div>
+
+    <div class="profile-field">
+      <label class="profile-label">notes</label>
+      <textarea class="profile-textarea" id="companyNotes" placeholder="why you're tracking this company, who you met, context…" rows="3"></textarea>
+    </div>
+
+    <div class="profile-field" id="companyPeopleField" style="display:none">
+      <label class="profile-label">people in your orbit</label>
+      <div id="companyPeopleList" class="company-people-list"></div>
+    </div>
+
+    <div class="profile-actions">
+      <button class="btn-ghost profile-save-btn" id="companySaveBtn" onclick="saveCompanyEdits()">save</button>
+      <a class="btn-ghost" id="companyWebsiteLink" href="#" target="_blank" style="display:none">↗ website</a>
+    </div>
+  </div>
+</div>
+
 <!-- Draft modal -->
 <div class="draft-panel-backdrop" id="draftBackdrop" onclick="closeDraftPanel(event)">
   <div id="draftPanel" class="draft-panel">
@@ -1254,6 +1371,9 @@ let draftMode = 'casual';
 
 let reviewQueue = [];        // merged pending people + companies
 let reviewIdx = 0;           // current top-of-queue index
+
+let allCompanies = [];       // loaded from API, used for people↔company linking
+let activeCompany = null;
 
 let carouselIdx = 0;
 const CAROUSEL_TOTAL = 4;
@@ -1382,38 +1502,40 @@ async function loadNetworkCompanies() {
     const compData = compRes.ok ? await compRes.json() : { companies: [] };
     const contactData = contactRes.ok ? await contactRes.json() : { contacts: [] };
 
-    const companies = compData.companies || [];
+    allCompanies = compData.companies || [];
     const activeContacts = contactData.contacts || [];
 
-    if (companies.length === 0) {
-      el.innerHTML = '<div class="empty-state"><div class="e-icon">◈</div><div class="e-title">no companies yet</div><div>Add companies from the dashboard, or they\'ll appear as emails arrive.</div></div>';
+    if (allCompanies.length === 0) {
+      el.innerHTML = '<div class="empty-state"><div class="e-icon">◈</div><div class="e-title">no companies yet</div><div>add companies or they\'ll appear as emails arrive.</div></div>';
       return;
     }
 
-    el.innerHTML = companies.map(co => {
-      const peopleCount = activeContacts.filter(c =>
-        c.company && c.company.toLowerCase() === (co.name || '').toLowerCase()
-      ).length;
-
+    el.innerHTML = allCompanies.map((co, i) => {
+      const peopleHere = getContactsAtCompany(co.name);
       const logoHtml = co.website
-        ? `<img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(co.website)}&sz=64" onerror="this.style.display='none';this.nextSibling.style.display='flex'" alt="">`
-          + `<span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--terracotta)">${safeText((co.name||'').charAt(0).toUpperCase())}</span>`
+        ? `<img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(co.website)}&sz=64" onerror="this.style.display='none';this.nextSibling.style.display='flex'" alt=""><span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--terracotta)">${safeText((co.name||'').charAt(0).toUpperCase())}</span>`
         : `<span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--terracotta)">${safeText((co.name||'').charAt(0).toUpperCase())}</span>`;
 
       const pills = [
+        co.category ? `<span class="pill pill-terra">${safeText(co.category)}</span>` : '',
         co.industry ? `<span class="pill">${safeText(co.industry)}</span>` : '',
-        co.stage    ? `<span class="pill pill-terra">${safeText(co.stage)}</span>` : '',
-      ].join('');
+        co.stage    ? `<span class="pill">${safeText(co.stage)}</span>` : '',
+      ].filter(Boolean).join('');
+
+      const peopleBadge = peopleHere.length > 0
+        ? `<div class="signal-badge badge-active">${peopleHere.length} in orbit</div>`
+        : '';
 
       return `
-        <div class="company-card">
+        <div class="company-card" onclick="openCompanyModal(${i})" style="cursor:pointer">
           <div class="company-logo">${logoHtml}</div>
           <div style="flex:1;min-width:0">
             <div class="company-name">${safeText(co.name)}</div>
             <div class="company-signal">${pills}</div>
             ${co.description ? `<div style="font-size:11px;color:var(--text-soft);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${safeText(co.description)}</div>` : ''}
+            ${co.notes ? `<div style="font-size:11px;color:var(--text-xsoft);margin-top:4px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${safeText(co.notes)}</div>` : ''}
           </div>
-          ${peopleCount > 0 ? `<div class="signal-badge badge-active">${peopleCount} person${peopleCount > 1 ? 's' : ''}</div>` : ''}
+          ${peopleBadge}
         </div>
       `;
     }).join('');
@@ -1923,7 +2045,7 @@ function renderAllContacts() {
       <div class="contact-card" onclick="${isEmailContact ? `openProfileModal('email',${emailContacts.indexOf(c)})` : `openProfileModal('csv',${idx})`}">
         ${avatarHtml(c.name)}
         <div>
-          <div class="contact-name">${safeText(c.name)}</div>
+          <div class="contact-name">${safeText(c.name)}${allCompanies.some(co => co.name && co.name.toLowerCase().trim() === (c.company||'').toLowerCase().trim()) ? ' <span class="watchlist-badge">🪐</span>' : ''}</div>
           <div class="contact-meta">
             ${c.warmth ? `<span class="warmth-dot ${warmthDotClass(c.warmth)}"></span>` : ''}
             ${metaStr}
@@ -1935,8 +2057,174 @@ function renderAllContacts() {
       </div>
     `;
   }).join('');
+  renderCues();
 }
 
+
+function renderCues() {
+  // CSV contacts: shouldNudge===true, sorted cold first
+  const csvCues = analyzed
+    .filter(c => c.shouldNudge)
+    .sort((a, b) => {
+      const order = { cold: 0, lukewarm: 1, warm: 2 };
+      return (order[a.warmth] ?? 1) - (order[b.warmth] ?? 1);
+    });
+
+  // Email contacts: have a follow_up_hook
+  const emailCues = emailContacts.filter(c => c.follow_up_hook);
+
+  // Merge, dedup by email, take top 3
+  const seen = new Set();
+  const cues = [];
+  for (const c of [...csvCues, ...emailCues]) {
+    const key = c.email || c.name;
+    if (!seen.has(key) && cues.length < 3) { seen.add(key); cues.push(c); }
+  }
+
+  const section = document.getElementById('cuesSection');
+  if (cues.length === 0) { section.style.display = 'none'; return; }
+  section.style.display = '';
+
+  const isEmail = c => !c.warmth;
+  document.getElementById('cueCards').innerHTML = cues.map(c => {
+    const co = c.company || ''; const ro = c.role || '';
+    const showRole = ro && !co.toLowerCase().includes(ro.toLowerCase());
+    const meta = [showRole ? ro : null, co].filter(Boolean).join(' · ');
+    const reason = c.reason || c.relationship_context || '';
+    const hook = c.follow_up_hook || '';
+    const idx = isEmail(c) ? emailContacts.indexOf(c) : analyzed.indexOf(c);
+    const clickFn = isEmail(c) ? `openProfileModal('email',${idx})` : `openProfileModal('csv',${idx})`;
+    return `
+      <div class="cue-card" onclick="${clickFn}">
+        <div class="cue-card-name">${safeText(c.name)}</div>
+        ${meta ? `<div class="cue-card-meta">${safeText(meta)}</div>` : ''}
+        ${reason ? `<div class="cue-card-reason">${safeText(reason)}</div>` : ''}
+        ${hook ? `<div class="cue-card-hook">→ ${safeText(hook)}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+// ─── PEOPLE ↔ COMPANY ────────────────────────────────────────────────────────
+function getContactsAtCompany(companyName) {
+  if (!companyName) return [];
+  const name = companyName.toLowerCase().trim();
+  const fromCsv = analyzed.filter(c => (c.company || '').toLowerCase().trim() === name);
+  const fromEmail = emailContacts.filter(c =>
+    (c.company || '').toLowerCase().trim() === name &&
+    !fromCsv.some(a => a.email && a.email === c.email)
+  );
+  return [...fromCsv, ...fromEmail];
+}
+
+// ─── COMPANY MODAL ────────────────────────────────────────────────────────────
+function openCompanyModal(idx) {
+  const co = allCompanies[idx];
+  if (!co) return;
+  activeCompany = { company: co, idx };
+
+  // Logo
+  const logoEl = document.getElementById('companyModalLogo');
+  if (co.website) {
+    logoEl.innerHTML = `<img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(co.website)}&sz=64" onerror="this.innerHTML='${(co.name||'?').charAt(0).toUpperCase()}'" alt="">`;
+  } else {
+    logoEl.textContent = (co.name || '?').charAt(0).toUpperCase();
+  }
+
+  // Name + meta
+  document.getElementById('companyModalName').textContent = co.name || '';
+  document.getElementById('companyModalMeta').textContent = [co.industry, co.stage].filter(Boolean).join(' · ');
+
+  // Website
+  const wsLink = document.getElementById('companyWebsiteLink');
+  if (co.website) {
+    wsLink.href = co.website.startsWith('http') ? co.website : 'https://' + co.website;
+    wsLink.style.display = '';
+  } else {
+    wsLink.style.display = 'none';
+  }
+
+  // Category pills
+  document.querySelectorAll('.category-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.cat === co.category);
+  });
+
+  // Notes
+  document.getElementById('companyNotes').value = co.notes || '';
+
+  // People in orbit
+  const people = getContactsAtCompany(co.name);
+  const peopleField = document.getElementById('companyPeopleField');
+  if (people.length > 0) {
+    peopleField.style.display = '';
+    document.getElementById('companyPeopleList').innerHTML = people.map(c => {
+      const colors = getAvatarColors(c.name || '');
+      const type = c.warmth ? 'csv' : 'email';
+      const pidx = type === 'csv' ? analyzed.indexOf(c) : emailContacts.indexOf(c);
+      const co2 = c.company || ''; const ro2 = c.role || '';
+      const showRole = ro2 && !co2.toLowerCase().includes(ro2.toLowerCase());
+      return `
+        <div class="company-person-row" onclick="closeCompanyModal();openProfileModal('${type}',${pidx})">
+          <div class="cp-avatar" style="background:${colors.bg};color:${colors.fg}">${safeText(getInitials(c.name||''))}</div>
+          <span class="cp-name">${safeText(c.name)}</span>
+          <span class="cp-role">${safeText(showRole ? ro2 : '')}</span>
+        </div>
+      `;
+    }).join('');
+  } else {
+    peopleField.style.display = 'none';
+  }
+
+  // Reset save button
+  const saveBtn = document.getElementById('companySaveBtn');
+  saveBtn.textContent = 'save';
+  saveBtn.classList.remove('saved');
+
+  document.getElementById('companyBackdrop').classList.add('open');
+}
+
+function closeCompanyModal(e) {
+  if (e && e.target !== document.getElementById('companyBackdrop')) return;
+  document.getElementById('companyBackdrop').classList.remove('open');
+}
+
+function selectCategory(el) {
+  document.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+}
+
+async function saveCompanyEdits() {
+  if (!activeCompany) return;
+  const co = activeCompany.company;
+  if (!co.id) return;
+
+  const notes    = document.getElementById('companyNotes').value;
+  const catEl    = document.querySelector('.category-pill.active');
+  const category = catEl ? catEl.dataset.cat : null;
+
+  // Update in-memory
+  co.notes    = notes;
+  co.category = category;
+
+  const saveBtn = document.getElementById('companySaveBtn');
+  saveBtn.textContent = 'saving…';
+
+  try {
+    await fetch(`/api/companies/${co.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notes, category }),
+    });
+    saveBtn.textContent = 'saved ✓';
+    saveBtn.classList.add('saved');
+    setTimeout(() => { saveBtn.textContent = 'save'; saveBtn.classList.remove('saved'); }, 2000);
+    // Refresh the list to show updated category
+    loadNetworkCompanies();
+  } catch (e) {
+    saveBtn.textContent = 'save';
+    showToast('could not save — try again');
+  }
+}
 
 // ─── CONTACT PROFILE MODAL ───────────────────────────────────────────────────
 let activeProfileContact = null;   // { contact, type: 'csv'|'email', idx }
@@ -2114,6 +2402,7 @@ async function loadEmailContacts() {
       c => !SELF_NAMES.includes((c.name || '').toLowerCase().trim())
     );
     renderAllContacts();
+    renderCues();
   } catch (e) {
     // Silently degrade
   }
