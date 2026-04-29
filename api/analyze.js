@@ -107,10 +107,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  if (allowedOrigins.length === 0) {
-    return res.status(500).json({ error: "ALLOWED_ORIGIN is not configured" });
-  }
-
   if (!corsAllowed) {
     return res.status(403).json({ error: "Origin not allowed" });
   }
