@@ -1604,15 +1604,17 @@ async function startProcessing() {
 }
 
 function buildColMap(row) {
-  const keys = Object.keys(row).map(k => k.toLowerCase().trim());
+  const originalKeys = Object.keys(row);
+  const keys = originalKeys.map(k => k.toLowerCase().trim());
+  console.log('[cue] CSV headers:', keys);
   const find = (...opts) => {
     for (const o of opts) {
-      const k = keys.find(k => k.includes(o));
-      if (k) return Object.keys(row).find(rk => rk.toLowerCase().trim() === k);
+      const idx = keys.findIndex(k => k.includes(o));
+      if (idx !== -1) return originalKeys[idx];
     }
     return null;
   };
-  return {
+  const map = {
     name:     find('name'),
     email:    find('email', 'mail'),
     company:  find('company', 'org', 'employer'),
@@ -1620,8 +1622,10 @@ function buildColMap(row) {
     last:     find('last', 'date', 'contact', 'touched'),
     notes:    find('note', 'context', 'memo'),
     warmth:   find('warmth', 'warm', 'status'),
-    linkedin: find('linkedin', 'linked in', 'li'),
+    linkedin: find('linkedin', 'linked in', 'profile url', 'profile'),
   };
+  console.log('[cue] column map:', map);
+  return map;
 }
 
 function updateProgress(done, total) {
@@ -2343,6 +2347,7 @@ function openProfileModal(type, idx) {
   document.getElementById('profileMeta').textContent = [showRole ? ro : null, co].filter(Boolean).join(' · ');
 
   // LinkedIn
+  console.log('[cue] contact linkedin field:', c.linkedin, '| full contact:', c);
   const li = c.linkedin || '';
   document.getElementById('profileLinkedin').value = li;
   updateLinkedinLink(li);
