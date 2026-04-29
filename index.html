@@ -780,6 +780,58 @@
     cursor: pointer; transition: background 0.15s; margin-bottom: 12px;
   }
   .ob-done-btn:hover { background: var(--terra-deep); }
+
+  /* ── REVIEW PILL ──────────────────────────────────────────────────────────── */
+  .review-pill {
+    position: fixed;
+    top: 36px; right: 44px;
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 24px; padding: 8px 16px;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 500; color: var(--text-soft);
+    cursor: pointer; z-index: 200;
+    box-shadow: 0 2px 12px rgba(180,100,60,0.08);
+    transition: all 0.15s;
+  }
+  .review-pill:hover { border-color: var(--terracotta); color: var(--terracotta); }
+  .review-pill-count {
+    background: var(--terracotta); color: white;
+    border-radius: 10px; padding: 1px 7px;
+    font-size: 10px; font-weight: 600;
+    display: none;
+  }
+  .review-pill-count.has-items { display: inline-block; }
+
+  /* ── REVIEW OVERLAY ───────────────────────────────────────────────────────── */
+  .review-overlay-wrap {
+    position: fixed; inset: 0;
+    background: rgba(44,26,14,0.45);
+    z-index: 400;
+    display: flex; align-items: center; justify-content: center;
+    animation: fadeUp 0.2s ease both;
+  }
+  .review-overlay-inner {
+    background: var(--white); border-radius: 24px;
+    padding: 44px; max-width: 520px; width: 92%;
+    position: relative; text-align: center;
+    max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 8px 48px rgba(44,26,14,0.18);
+  }
+  .review-overlay-close {
+    position: absolute; top: 16px; right: 20px;
+    background: none; border: none; font-size: 24px;
+    color: var(--text-xsoft); cursor: pointer; line-height: 1;
+  }
+  .review-overlay-close:hover { color: var(--text-soft); }
+  .review-overlay-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px; font-weight: 300; color: var(--text-dark);
+    margin-bottom: 10px;
+  }
+  .review-overlay-sub {
+    font-size: 13px; color: var(--text-soft); line-height: 1.7;
+    max-width: 360px; margin: 0 auto 8px;
+  }
 </style>
 </head>
 <body>
@@ -897,51 +949,22 @@
     <div class="logo-sub">relationship intelligence</div>
   </div>
   <div class="nav-section-label">Network</div>
-  <a class="nav-item active" onclick="showPage('dashboard',this)"><span class="icon">◈</span> Dashboard</a>
-  <a class="nav-item" id="navReview" onclick="showPage('review',this)">
-    <span class="icon">◇</span> Review
-    <span class="badge" id="reviewBadge"></span>
-  </a>
-  <a class="nav-item" onclick="showPage('contacts',this)"><span class="icon">○</span> My Network</a>
-  <div class="nav-section-label">You</div>
-  <a class="nav-item" onclick="showPage('brief',this)"><span class="icon">≡</span> Weekly Brief</a>
+  <a class="nav-item active" id="navPeople" onclick="showPage('contacts',this)"><span class="icon">○</span> people</a>
+  <a class="nav-item" id="navCompanies" onclick="showPage('contacts-companies',this)"><span class="icon">◈</span> companies</a>
 </nav>
 
 <main class="main">
 
-  <!-- DASHBOARD -->
-  <div class="page active" id="page-dashboard">
+  <div id="reviewPill" class="review-pill" onclick="openReviewOverlay()" style="display:none">
+    <span>◇ review</span><span class="review-pill-count" id="reviewPillCount"></span>
+  </div>
+
+  <!-- PEOPLE -->
+  <div class="page active" id="page-contacts">
     <div class="topbar">
       <div class="page-title">good morning, <em>Georgia.</em></div>
       <button class="upload-btn" id="uploadTrigger" onclick="document.getElementById('csvInput').click()">+ import contacts</button>
       <input type="file" id="csvInput" accept=".csv" onchange="handleFile(this.files[0])"/>
-    </div>
-
-    <!-- Inbox connection banner (hidden once inbox is connected or dismissed) -->
-    <div class="inbox-banner" id="inboxBanner" style="display:none" onclick="openInboxModal()">
-      <div class="inbox-banner-body">
-        <div class="inbox-banner-title">✨ want cue to work like magic?</div>
-        <div class="inbox-banner-sub">connect your inbox and we'll surface new contacts automatically</div>
-      </div>
-      <div class="inbox-banner-arrow">→</div>
-      <button class="inbox-banner-dismiss" onclick="event.stopPropagation();dismissInboxBanner()" title="dismiss">×</button>
-    </div>
-
-    <!-- Upload zone (shown when no contacts) -->
-    <div class="upload-zone" id="uploadZone"
-      ondragover="event.preventDefault();this.classList.add('drag-over')"
-      ondragleave="this.classList.remove('drag-over')"
-      ondrop="event.preventDefault();this.classList.remove('drag-over');handleFile(event.dataTransfer.files[0])"
-      onclick="document.getElementById('csvInput').click()">
-      <div class="upload-text">drop your contacts here</div>
-      <div class="upload-sub">or click to browse</div>
-    </div>
-
-    <!-- Company add section -->
-    <div class="company-add-section" id="companyAddSection">
-      <div class="company-add-label">add companies to track</div>
-      <textarea class="company-add-textarea" id="companyAddTextarea" placeholder="Paste company names, one per line&#10;e.g. Stripe&#10;Anthropic&#10;Figma"></textarea>
-      <button class="company-add-btn" id="companyAddBtn" onclick="addCompanies()">Add to queue</button>
     </div>
 
     <!-- Processing bar -->
@@ -950,150 +973,44 @@
       <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
     </div>
 
-    <!-- Stats (shown after upload or when active contacts exist) -->
-    <div class="stats-row" id="statsRow" style="display:none">
-      <div class="stat-card accent">
-        <div class="stat-label">Network</div>
-        <div class="stat-number" id="statTotal">0</div>
-        <div class="stat-sub">relationships tracked</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Reach out this week</div>
-        <div class="stat-number" id="statNudges">–</div>
-        <div class="stat-sub">nudges waiting</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Warm connections</div>
-        <div class="stat-number" id="statWarm">–</div>
-        <div class="stat-sub">active relationships</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Need attention</div>
-        <div class="stat-number" id="statCold">–</div>
-        <div class="stat-sub">gone cold</div>
+    <!-- CSV / analyzed contacts -->
+    <div class="contact-list" id="allContactsList">
+      <div class="empty-state">
+        <div class="e-icon">○</div>
+        <div class="e-title">your people are waiting</div>
+        <div style="margin-bottom:20px">you don't need a perfect spreadsheet — even 5 names is enough to get started.</div>
+        <button class="upload-btn" onclick="document.getElementById('csvInput').click()" style="margin:0 auto;display:block">drop in some names →</button>
       </div>
     </div>
 
-    <div class="two-col" id="mainContent" style="display:none">
-      <div>
-        <div class="section-header">
-          <div class="section-title">who to reach out to</div>
-          <a class="section-link" onclick="showPage('nudges',null)">all nudges →</a>
-        </div>
-        <div class="contact-list" id="nudgeList"></div>
-
-        <div id="draftPanel" style="display:none" class="draft-panel">
-          <div class="draft-header">
-            <div class="draft-title" id="draftName">message draft</div>
-            <button class="draft-close" onclick="document.getElementById('draftPanel').style.display='none'">×</button>
-          </div>
-          <div class="draft-reason" id="draftReason"></div>
-          <div class="draft-tabs">
-            <button class="draft-tab active" onclick="setDraftMode('casual',this)">casual</button>
-            <button class="draft-tab" onclick="setDraftMode('professional',this)">professional</button>
-          </div>
-          <div class="draft-body" id="draftBody"></div>
-          <div class="draft-actions">
-            <button class="btn-primary" onclick="copyDraft()">copy message</button>
-            <button class="btn-ghost" onclick="mailDraft()">open in email</button>
-          </div>
-        </div>
+    <div id="draftPanel" style="display:none" class="draft-panel">
+      <div class="draft-header">
+        <div class="draft-title" id="draftName">message draft</div>
+        <button class="draft-close" onclick="document.getElementById('draftPanel').style.display='none'">×</button>
       </div>
-
-      <div>
-        <div class="brief-card" id="weeklyBriefCard">
-          <div class="brief-title">this week's brief</div>
-          <div class="brief-date" id="briefDate"></div>
-          <div id="briefItems"></div>
-        </div>
+      <div class="draft-reason" id="draftReason"></div>
+      <div class="draft-tabs">
+        <button class="draft-tab active" onclick="setDraftMode('casual',this)">casual</button>
+        <button class="draft-tab" onclick="setDraftMode('professional',this)">professional</button>
+      </div>
+      <div class="draft-body" id="draftBody"></div>
+      <div class="draft-actions">
+        <button class="btn-primary" onclick="copyDraft()">copy message</button>
+        <button class="btn-ghost" onclick="mailDraft()">open in email</button>
       </div>
     </div>
   </div>
 
-  <!-- REVIEW (tinder flow) -->
-  <div class="page" id="page-review">
+  <!-- COMPANIES -->
+  <div class="page" id="page-contacts-companies">
     <div class="topbar">
-      <div class="page-title">your <em>review</em></div>
+      <div class="page-title">your <em>companies</em></div>
     </div>
-    <div class="review-page-wrap">
-      <div id="reviewContent">
-        <div class="review-stack" id="reviewStack">
-          <!-- cards injected here -->
-        </div>
-        <div class="review-actions" id="reviewActions">
-          <button class="review-action-btn dismiss" onclick="reviewDismiss()" title="Dismiss">✕</button>
-          <button class="review-action-btn approve" onclick="reviewApprove()" title="Add to network">✓</button>
-        </div>
-      </div>
-      <div class="review-empty" id="reviewEmpty" style="display:none">
-        <div class="e-icon">✓</div>
-        <div class="e-title">all caught up</div>
-        <p>nothing new to review</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- MY NETWORK -->
-  <div class="page" id="page-contacts">
-    <div class="topbar">
-      <div class="page-title">my <em>network</em></div>
-    </div>
-
-    <!-- Tab bar: People / Companies -->
-    <div class="tab-bar">
-      <button class="tab active" onclick="switchNetworkTab('people',this)">people</button>
-      <button class="tab" onclick="switchNetworkTab('companies',this)">companies</button>
-    </div>
-
-    <!-- People tab -->
-    <div id="networkPeopleTab">
-      <!-- Inbox shelf: shown when email-imported contacts exist -->
-      <div class="inbox-shelf" id="inboxShelf">
-        <div class="shelf-header" onclick="toggleShelf()">
-          <div class="section-title">from your inbox</div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span class="shelf-count" id="shelfCount">0</span>
-            <span id="shelfToggleIcon" style="font-size:12px;color:var(--text-xsoft)">▾</span>
-          </div>
-        </div>
-        <div id="shelfBody" class="contact-list"></div>
-      </div>
-
-      <!-- Detail panel for inbox contacts -->
-      <div id="inboxPanel" style="display:none" class="draft-panel">
-        <div class="draft-header">
-          <div class="draft-title" id="inboxPanelName">Contact</div>
-          <button class="draft-close" onclick="document.getElementById('inboxPanel').style.display='none'">×</button>
-        </div>
-        <div class="draft-reason" id="inboxPanelContext"></div>
-        <div id="inboxPanelHook" style="font-size:13px;font-weight:500;color:var(--terracotta);margin-bottom:16px;padding:10px 12px;background:var(--blush);border-radius:8px;display:none"></div>
-        <div class="draft-actions" id="inboxPanelActions" style="display:none">
-          <button class="btn-primary" onclick="mailInboxContact()">Open in email</button>
-        </div>
-      </div>
-
-      <!-- Divider between shelf and CSV contacts (only when both exist) -->
-      <hr class="shelf-divider" id="shelfDivider" style="display:none"/>
-      <div id="csvSectionLabel" class="shelf-section-label" style="display:none">from csv</div>
-
-      <!-- CSV / analyzed contacts -->
-      <div class="contact-list" id="allContactsList">
-        <div class="empty-state">
-          <div class="e-icon">○</div>
-          <div class="e-title">no contacts yet</div>
-          <div>import a csv from the dashboard, or contacts will appear here as emails arrive.</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Companies tab -->
-    <div id="networkCompaniesTab" style="display:none">
-      <div id="companiesNetworkList">
-        <div class="empty-state">
-          <div class="e-icon">◈</div>
-          <div class="e-title">no companies yet</div>
-          <div>add companies from the dashboard, or they'll appear as emails arrive.</div>
-        </div>
+    <div id="companiesNetworkList">
+      <div class="empty-state">
+        <div class="e-icon">◈</div>
+        <div class="e-title">no companies yet</div>
+        <div>they'll appear as emails arrive.</div>
       </div>
     </div>
   </div>
@@ -1109,55 +1026,46 @@
         <div>import a csv and AI will surface who to reach out to.</div>
       </div>
     </div>
-    <div id="draftPanel2" style="display:none" class="draft-panel">
-      <div class="draft-header">
-        <div class="draft-title" id="draftName2">message draft</div>
-        <button class="draft-close" onclick="document.getElementById('draftPanel2').style.display='none'">×</button>
-      </div>
-      <div class="draft-reason" id="draftReason2"></div>
-      <div class="draft-tabs">
-        <button class="draft-tab active" onclick="setDraftMode2('casual',this)">casual</button>
-        <button class="draft-tab" onclick="setDraftMode2('professional',this)">professional</button>
-      </div>
-      <div class="draft-body" id="draftBody2"></div>
-      <div class="draft-actions">
-        <button class="btn-primary" onclick="copyDraft2()">copy message</button>
-        <button class="btn-ghost" onclick="mailDraft2()">open in email</button>
-      </div>
-    </div>
   </div>
 
-  <!-- WEEKLY BRIEF -->
-  <div class="page" id="page-brief">
-    <div class="topbar"><div class="page-title">weekly <em>brief</em></div></div>
-    <div style="font-size:11px;color:var(--text-xsoft);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:24px;" id="briefPageDate"></div>
-    <div class="brief-card" id="briefPageCard">
-      <div class="empty-state">
-        <div class="e-icon">≡</div>
-        <div class="e-title">no brief yet</div>
-        <div>import your contacts to generate your weekly brief.</div>
+  <!-- Review overlay (replaces review page) -->
+  <div id="reviewOverlay" class="review-overlay-wrap" style="display:none">
+    <div class="review-overlay-inner">
+      <button class="review-overlay-close" onclick="closeReviewOverlay()">×</button>
+
+      <!-- Connect inbox prompt (shown when queue is empty and inbox not yet connected) -->
+      <div id="reviewConnectInbox" style="display:none">
+        <div class="review-overlay-title">connect your inbox</div>
+        <div class="review-overlay-sub">forward an intro email to cue. we'll extract everyone in it, enrich their context, and drop them into your review queue.</div>
+        <div class="forwarding-box" style="margin: 28px 0 14px">
+          <div class="forwarding-label">your forwarding address</div>
+          <div class="forwarding-row">
+            <div class="forwarding-address">grm.secret.network@gmail.com</div>
+            <button class="forwarding-copy-btn" onclick="copyForwardingAddress()">copy</button>
+          </div>
+        </div>
+        <div class="forwarding-note">* unique per user in production — set up once, works forever.</div>
+      </div>
+
+      <!-- All caught up (shown when queue empty and inbox connected) -->
+      <div id="reviewAllCaughtUp" style="display:none">
+        <div class="e-icon" style="font-size:32px;margin-bottom:12px">✓</div>
+        <div class="review-overlay-title">all caught up</div>
+        <div class="review-overlay-sub">new contacts will appear here as emails arrive.</div>
+      </div>
+
+      <!-- Tinder card stack -->
+      <div id="reviewCardArea" style="display:none">
+        <div class="review-stack" id="reviewStack"></div>
+        <div class="review-actions" id="reviewActions">
+          <button class="review-action-btn dismiss" onclick="reviewDismiss()" title="Dismiss">✕</button>
+          <button class="review-action-btn approve" onclick="reviewApprove()" title="Add to network">✓</button>
+        </div>
       </div>
     </div>
   </div>
 
 </main>
-
-<!-- Inbox connection modal -->
-<div class="modal-overlay" id="inboxModal" style="display:none" onclick="closeInboxModal()">
-  <div class="modal-card" onclick="event.stopPropagation()">
-    <button class="modal-close" onclick="closeInboxModal()">×</button>
-    <div class="modal-title">connect your inbox</div>
-    <div class="modal-sub">forward an intro email to cue. we'll extract everyone in it, enrich their context, and drop them into your review queue.</div>
-    <div class="forwarding-box">
-      <div class="forwarding-label">your forwarding address</div>
-      <div class="forwarding-row">
-        <div class="forwarding-address">grm.secret.network@gmail.com</div>
-        <button class="forwarding-copy-btn" onclick="copyForwardingAddress()">copy</button>
-      </div>
-    </div>
-    <div class="forwarding-note">* unique per user in production — set up once, works forever.</div>
-  </div>
-</div>
 
 <div class="copy-toast" id="copyToast">Copied to clipboard ✓</div>
 
@@ -1166,12 +1074,8 @@
 let contacts = [];           // raw CSV rows
 let analyzed = [];           // enriched with AI data
 let emailContacts = [];      // active email-imported contacts
-let inboxShelfOpen = true;
-let activeInboxContact = null;
 let activeDraft = null;
-let activeDraft2 = null;
 let draftMode = 'casual';
-let draftMode2 = 'casual';
 
 let reviewQueue = [];        // merged pending people + companies
 let reviewIdx = 0;           // current top-of-queue index
@@ -1249,8 +1153,7 @@ function advanceOnboarding() {
 function finishOnboarding() {
   localStorage.setItem('cue_onboarded', '1');
   document.getElementById('overlay').classList.add('hidden');
-  showPage('dashboard', document.querySelector('.nav-item'));
-  maybeShowInboxBanner();
+  showPage('contacts', document.getElementById('navPeople'));
 }
 
 function handleObFile(file) {
@@ -1261,34 +1164,6 @@ function handleObFile(file) {
 
 function copyEmail() {
   navigator.clipboard.writeText('grm.secret.network@gmail.com').then(() => showToast('Copied!'));
-}
-
-// ─── INBOX BANNER + MODAL ────────────────────────────────────────────────────
-
-function maybeShowInboxBanner() {
-  if (localStorage.getItem('cue_inbox_dismissed')) return;
-  document.getElementById('inboxBanner').style.display = 'flex';
-}
-
-function dismissInboxBanner() {
-  localStorage.setItem('cue_inbox_dismissed', '1');
-  document.getElementById('inboxBanner').style.display = 'none';
-}
-
-function hideInboxBannerIfConnected(reviewItems) {
-  // Hide banner once there are email contacts in the review queue
-  const hasEmailContacts = reviewItems.some(item => item._type === 'person' && item.source === 'email_import');
-  if (hasEmailContacts) {
-    document.getElementById('inboxBanner').style.display = 'none';
-  }
-}
-
-function openInboxModal() {
-  document.getElementById('inboxModal').style.display = 'flex';
-}
-
-function closeInboxModal() {
-  document.getElementById('inboxModal').style.display = 'none';
 }
 
 function copyForwardingAddress() {
@@ -1303,29 +1178,11 @@ function showPage(name, el) {
   if (page) page.classList.add('active');
   if (el) el.classList.add('active');
 
-  if (name === 'contacts') {
-    renderInboxShelf();
-    document.getElementById('inboxPanel').style.display = 'none';
-  }
-  if (name === 'review') {
-    renderReviewCard();
-  }
-}
-
-// ─── MY NETWORK TABS ─────────────────────────────────────────────────────────
-function switchNetworkTab(tab, el) {
-  document.querySelectorAll('.tab-bar .tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-
-  if (tab === 'people') {
-    document.getElementById('networkPeopleTab').style.display = '';
-    document.getElementById('networkCompaniesTab').style.display = 'none';
-  } else {
-    document.getElementById('networkPeopleTab').style.display = 'none';
-    document.getElementById('networkCompaniesTab').style.display = '';
+  if (name === 'contacts-companies') {
     loadNetworkCompanies();
   }
 }
+
 
 async function loadNetworkCompanies() {
   const el = document.getElementById('companiesNetworkList');
@@ -1393,18 +1250,11 @@ function handleFile(file) {
 
 // ─── PROCESSING ──────────────────────────────────────────────────────────────
 async function startProcessing() {
-  document.getElementById('uploadZone').classList.add('hidden');
-  document.getElementById('statsRow').style.display = 'grid';
-  document.getElementById('mainContent').style.display = 'grid';
-  document.getElementById('statTotal').textContent = contacts.length;
-
   const bar = document.getElementById('processingBar');
   bar.classList.add('visible');
 
   analyzed = [];
   let done = 0;
-
-  renderSkeletonNudges();
 
   const colMap = buildColMap(contacts[0] || {});
 
@@ -1416,17 +1266,12 @@ async function startProcessing() {
       analyzed.push(enriched);
       done++;
       updateProgress(done, contacts.length);
-      renderNudgeList();
       renderAllContacts();
-      updateStats();
     }));
   }
 
   bar.classList.remove('visible');
-  renderNudgeList();
   renderAllContacts();
-  renderBrief();
-  updateStats();
 }
 
 function buildColMap(row) {
@@ -1517,7 +1362,7 @@ Rules:
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 1000,
         messages: [{ role: 'user', content: prompt }]
       })
@@ -1604,8 +1449,6 @@ async function loadReviewQueue() {
     reviewIdx = 0;
 
     updateReviewBadge();
-    renderReviewCard();
-    hideInboxBannerIfConnected(reviewQueue);
   } catch (e) {
     // silently degrade
   }
@@ -1613,31 +1456,41 @@ async function loadReviewQueue() {
 
 function updateReviewBadge() {
   const count = reviewQueue.length - reviewIdx;
-  const badge = document.getElementById('reviewBadge');
+  const pill = document.getElementById('reviewPill');
+  const badge = document.getElementById('reviewPillCount');
+  pill.style.display = 'flex';
   badge.textContent = count > 0 ? count : '';
+  badge.classList.toggle('has-items', count > 0);
 }
 
 function renderReviewCard() {
   const stack = document.getElementById('reviewStack');
-  const empty = document.getElementById('reviewEmpty');
-  const actions = document.getElementById('reviewActions');
-
+  if (!stack) return;
   const remaining = reviewQueue.slice(reviewIdx);
-
   if (remaining.length === 0) {
     stack.innerHTML = '';
-    stack.style.display = 'none';
-    actions.style.display = 'none';
-    empty.style.display = '';
     return;
   }
-
-  stack.style.display = 'block';
-  actions.style.display = 'flex';
-  empty.style.display = 'none';
-
   const item = remaining[0];
   stack.innerHTML = buildReviewCardHtml(item);
+}
+
+function openReviewOverlay() {
+  const overlay = document.getElementById('reviewOverlay');
+  overlay.style.display = 'flex';
+
+  const remaining = reviewQueue.slice(reviewIdx);
+  const inboxConnected = emailContacts.length > 0;
+
+  document.getElementById('reviewCardArea').style.display = remaining.length > 0 ? 'block' : 'none';
+  document.getElementById('reviewConnectInbox').style.display = remaining.length === 0 && !inboxConnected ? 'block' : 'none';
+  document.getElementById('reviewAllCaughtUp').style.display = remaining.length === 0 && inboxConnected ? 'block' : 'none';
+
+  if (remaining.length > 0) renderReviewCard();
+}
+
+function closeReviewOverlay() {
+  document.getElementById('reviewOverlay').style.display = 'none';
 }
 
 function buildReviewCardHtml(item) {
@@ -1779,6 +1632,18 @@ function advanceReview() {
   reviewIdx++;
   updateReviewBadge();
   renderReviewCard();
+  // Update overlay state if open
+  const overlay = document.getElementById('reviewOverlay');
+  if (overlay && overlay.style.display !== 'none') {
+    const remaining = reviewQueue.slice(reviewIdx);
+    if (remaining.length === 0) {
+      const inboxConnected = emailContacts.length > 0;
+      document.getElementById('reviewCardArea').style.display = 'none';
+      document.getElementById('reviewConnectInbox').style.display = !inboxConnected ? 'block' : 'none';
+      document.getElementById('reviewAllCaughtUp').style.display = inboxConnected ? 'block' : 'none';
+      document.getElementById('reviewActions').style.display = 'none';
+    }
+  }
 }
 
 // ─── COMPANY PASTE-IN ────────────────────────────────────────────────────────
@@ -1843,155 +1708,37 @@ async function addCompanies() {
   await loadReviewQueue();
 }
 
-// ─── DASHBOARD STATS (from API) ───────────────────────────────────────────────
-async function loadDashboardStats() {
-  try {
-    const res = await fetch('/api/contacts?status=active&limit=500');
-    if (!res.ok) return;
-    const data = await res.json();
-    const activeCount = (data.contacts || []).length;
-
-    if (activeCount > 0 || analyzed.length > 0) {
-      document.getElementById('statsRow').style.display = 'grid';
-      document.getElementById('mainContent').style.display = 'grid';
-      document.getElementById('uploadZone').classList.add('hidden');
-    }
-
-    if (analyzed.length === 0 && activeCount > 0) {
-      document.getElementById('statTotal').textContent = activeCount;
-    }
-  } catch (e) { /* silently degrade */ }
-}
-
 // ─── RENDERING ───────────────────────────────────────────────────────────────
-function renderSkeletonNudges() {
-  const list = document.getElementById('nudgeList');
-  list.innerHTML = Array(3).fill(0).map(() => `
-    <div class="contact-card loading">
-      <div class="contact-avatar" style="background:var(--sand)"></div>
-      <div>
-        <div class="skeleton" style="width:140px;height:14px;margin-bottom:6px">&nbsp;</div>
-        <div class="skeleton" style="width:200px;height:11px;margin-bottom:4px">&nbsp;</div>
-        <div class="skeleton" style="width:240px;height:11px">&nbsp;</div>
-      </div>
-      <div class="skeleton" style="width:70px;height:28px;border-radius:20px">&nbsp;</div>
-    </div>
-  `).join('');
-}
-
-function renderNudgeList() {
-  const nudges = analyzed.filter(c => c.shouldNudge).slice(0, 3);
-  const list = document.getElementById('nudgeList');
-
-  if (nudges.length === 0 && analyzed.length < contacts.length) {
-    renderSkeletonNudges();
-    return;
-  }
-
-  if (nudges.length === 0) {
-    list.innerHTML = `<div class="empty-state"><div class="e-icon">✓</div><div class="e-title">all caught up!</div><div>no urgent nudges right now.</div></div>`;
-    return;
-  }
-
-  list.innerHTML = nudges.map((c, i) => `
-    <div class="contact-card" onclick="openDraft1(${analyzed.indexOf(c)})">
-      ${avatarHtml(c.name)}
-      <div>
-        <div class="contact-name">${safeText(c.name)}</div>
-        <div class="contact-meta">
-          <span class="warmth-dot ${warmthDotClass(c.warmth)}"></span>
-          ${joinMeta([c.company, c.last ? 'Last: ' + c.last : ''])}
-        </div>
-        <div class="contact-note">${safeText(c.reason)}</div>
-      </div>
-      <div class="nudge-pill ${pillClass(c.warmth, c.shouldNudge)}">${safeText(c.nudgeLabel)}</div>
-    </div>
-  `).join('');
-
-  // Also render nudges page
-  const nudgesPage = document.getElementById('nudgesPageList');
-  const allNudges = analyzed.filter(c => c.shouldNudge);
-  if (allNudges.length > 0) {
-    document.getElementById('nudgesBanner').style.display = 'block';
-    document.getElementById('nudgesBanner').textContent = `Recruiting season is active. You have ${allNudges.length} contact${allNudges.length > 1 ? 's' : ''} worth reaching out to based on your notes and relationship history.`;
-    nudgesPage.innerHTML = allNudges.map(c => `
-      <div class="contact-card" onclick="openDraft2Page(${analyzed.indexOf(c)})">
-        ${avatarHtml(c.name)}
-        <div>
-          <div class="contact-name">${safeText(c.name)}${c.company ? ' — ' + safeText(c.company) : ''}</div>
-          <div class="contact-meta"><span class="warmth-dot ${warmthDotClass(c.warmth)}"></span>${safeText(c.last ? 'Last contact: ' + c.last : 'Contact date unknown')}</div>
-          <div class="contact-note">${safeText(c.reason)}</div>
-        </div>
-        <div class="nudge-pill ${pillClass(c.warmth, c.shouldNudge)}">${safeText(c.nudgeLabel)}</div>
-      </div>
-    `).join('');
-  }
-}
 
 function renderAllContacts() {
   const list = document.getElementById('allContactsList');
-  if (analyzed.length === 0) return;
-
-  const hasBoth = emailContacts.length > 0;
-  document.getElementById('shelfDivider').style.display = hasBoth ? 'block' : 'none';
-  document.getElementById('csvSectionLabel').style.display = hasBoth ? 'block' : 'none';
-
-  list.innerHTML = analyzed.map((c, i) => `
-    <div class="contact-card" onclick="openDraft1(${i})">
-      ${avatarHtml(c.name)}
-      <div>
-        <div class="contact-name">${safeText(c.name)}</div>
-        <div class="contact-meta">
-          <span class="warmth-dot ${warmthDotClass(c.warmth)}"></span>
-          ${joinMeta([c.company, c.role])}
+  const allPeople = [
+    ...analyzed,
+    ...emailContacts.filter(c => !analyzed.some(a => a.email && a.email === c.email))
+  ];
+  if (allPeople.length === 0) {
+    return;
+  }
+  list.innerHTML = allPeople.map((c) => {
+    const isEmailContact = !c.warmth;
+    const idx = analyzed.indexOf(c);
+    return `
+      <div class="contact-card" onclick="${isEmailContact ? `openEmailContactDraft(${emailContacts.indexOf(c)})` : `openDraft1(${idx})`}">
+        ${avatarHtml(c.name)}
+        <div>
+          <div class="contact-name">${safeText(c.name)}</div>
+          <div class="contact-meta">
+            ${c.warmth ? `<span class="warmth-dot ${warmthDotClass(c.warmth)}"></span>` : ''}
+            ${joinMeta([c.company, c.role])}
+          </div>
+          <div class="contact-note">${safeText(c.relationship_context ? c.relationship_context.substring(0, 80) : (c.notes ? c.notes.substring(0, 80) : ''))}</div>
         </div>
-        <div class="contact-note">${safeText(`${c.last ? 'Last contact: ' + c.last : ''}${c.notes ? (c.last ? ' · ' : '') + c.notes.substring(0, 80) : ''}`)}</div>
+        <div class="nudge-pill ${c.warmth ? pillClass(c.warmth, c.shouldNudge) : 'neutral'}">${safeText(c.warmth === 'warm' ? 'warm' : c.shouldNudge ? c.nudgeLabel : c.follow_up_hook ? c.follow_up_hook.substring(0,20) : 'say hello')}</div>
       </div>
-      <div class="nudge-pill ${pillClass(c.warmth, c.shouldNudge)}">${safeText(c.warmth === 'warm' ? 'Warm' : c.shouldNudge ? c.nudgeLabel : 'Current')}</div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
-function updateStats() {
-  const warm  = analyzed.filter(c => c.warmth === 'warm').length;
-  const cold  = analyzed.filter(c => c.warmth === 'cold').length;
-  const nudge = analyzed.filter(c => c.shouldNudge).length;
-  document.getElementById('statTotal').textContent = contacts.length;
-  document.getElementById('statNudges').textContent = nudge;
-  document.getElementById('statWarm').textContent = warm;
-  document.getElementById('statCold').textContent = cold;
-}
-
-function renderBrief() {
-  const nudges = analyzed.filter(c => c.shouldNudge);
-  const warm   = analyzed.filter(c => c.warmth === 'warm');
-
-  const now = new Date();
-  const dateStr = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-  document.getElementById('briefDate').textContent = dateStr;
-  document.getElementById('briefPageDate').textContent = dateStr;
-
-  const items = [
-    nudges.length > 0 && `<strong>${nudges.length} contact${nudges.length > 1 ? 's' : ''}</strong> worth reaching out to based on your notes and timing`,
-    warm.length > 0 && `<strong>${warm.length} warm relationship${warm.length > 1 ? 's' : ''}</strong> — keep up the momentum`,
-    nudges[0] && `<strong>${safeText(nudges[0].name)}</strong>${nudges[0].company ? ' at ' + safeText(nudges[0].company) : ''} — ${safeText(nudges[0].reason)}`,
-    nudges[1] && `<strong>${safeText(nudges[1].name)}</strong>${nudges[1].company ? ' at ' + safeText(nudges[1].company) : ''} — ${safeText(nudges[1].reason)}`,
-  ].filter(Boolean);
-
-  const itemsHtml = items.map(t => `
-    <div class="brief-item">
-      <div class="brief-dot"></div>
-      <div class="brief-text">${t}</div>
-    </div>`).join('');
-
-  document.getElementById('briefItems').innerHTML = itemsHtml;
-
-  document.getElementById('briefPageCard').innerHTML = `
-    <div class="brief-title">your network at a glance</div>
-    <div class="brief-date" style="margin-bottom:16px">${contacts.length} contacts · ${warm.length} warm · ${nudges.length} need attention</div>
-    ${itemsHtml}
-  `;
-}
 
 // ─── DRAFT PANEL ─────────────────────────────────────────────────────────────
 function openDraft1(idx) {
@@ -2007,18 +1754,6 @@ function openDraft1(idx) {
   document.getElementById('draftPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-function openDraft2Page(idx) {
-  const c = analyzed[idx];
-  if (!c) return;
-  activeDraft2 = c;
-  draftMode2 = 'casual';
-  document.getElementById('draftName2').textContent = `draft for ${c.name}`;
-  document.getElementById('draftReason2').textContent = c.reason;
-  document.getElementById('draftBody2').textContent = c.casual;
-  document.querySelectorAll('#draftPanel2 .draft-tab').forEach((t,i) => t.classList.toggle('active', i===0));
-  document.getElementById('draftPanel2').style.display = 'block';
-  document.getElementById('draftPanel2').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
 
 function setDraftMode(mode, el) {
   draftMode = mode;
@@ -2027,20 +1762,8 @@ function setDraftMode(mode, el) {
   if (activeDraft) document.getElementById('draftBody').textContent = activeDraft[mode];
 }
 
-function setDraftMode2(mode, el) {
-  draftMode2 = mode;
-  document.querySelectorAll('#draftPanel2 .draft-tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-  if (activeDraft2) document.getElementById('draftBody2').textContent = activeDraft2[mode];
-}
-
 function copyDraft() {
   const text = document.getElementById('draftBody').textContent;
-  navigator.clipboard.writeText(text).then(() => showToast());
-}
-
-function copyDraft2() {
-  const text = document.getElementById('draftBody2').textContent;
   navigator.clipboard.writeText(text).then(() => showToast());
 }
 
@@ -2052,14 +1775,6 @@ function mailDraft() {
   window.open(`mailto:${to}?subject=${sub}&body=${body}`);
 }
 
-function mailDraft2() {
-  if (!activeDraft2) return;
-  const sub = encodeURIComponent('Checking in');
-  const body = encodeURIComponent(activeDraft2[draftMode2]);
-  const to = encodeURIComponent(activeDraft2.email || '');
-  window.open(`mailto:${to}?subject=${sub}&body=${body}`);
-}
-
 function showToast(msg) {
   const t = document.getElementById('copyToast');
   t.textContent = msg || 'Copied to clipboard ✓';
@@ -2067,7 +1782,7 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2000);
 }
 
-// ─── INBOX SHELF ─────────────────────────────────────────────────────────────
+// ─── EMAIL CONTACTS ───────────────────────────────────────────────────────────
 const SELF_NAMES = ['georgia messinger'];
 
 async function loadEmailContacts() {
@@ -2078,120 +1793,96 @@ async function loadEmailContacts() {
     emailContacts = (data.contacts || []).filter(
       c => !SELF_NAMES.includes((c.name || '').toLowerCase().trim())
     );
-    renderInboxShelf();
+    renderAllContacts();
   } catch (e) {
     // Silently degrade
   }
 }
 
-function renderInboxShelf() {
-  const shelf = document.getElementById('inboxShelf');
-  const divider = document.getElementById('shelfDivider');
-  const csvLabel = document.getElementById('csvSectionLabel');
-  if (!shelf) return;
-
-  if (emailContacts.length === 0) {
-    shelf.style.display = 'none';
-    divider.style.display = 'none';
-    csvLabel.style.display = 'none';
-    return;
-  }
-
-  shelf.style.display = 'block';
-  document.getElementById('shelfCount').textContent = emailContacts.length;
-
-  const hasCsv = analyzed.length > 0;
-  divider.style.display = hasCsv ? 'block' : 'none';
-  csvLabel.style.display = hasCsv ? 'block' : 'none';
-
-  const body = document.getElementById('shelfBody');
-  if (!inboxShelfOpen) {
-    body.style.display = 'none';
-    document.getElementById('shelfToggleIcon').textContent = '▸';
-    return;
-  }
-
-  body.style.display = 'flex';
-  body.style.flexDirection = 'column';
-  document.getElementById('shelfToggleIcon').textContent = '▾';
-
-  body.innerHTML = emailContacts.map((c, i) => {
-    const context = c.relationship_context
-      ? safeText(c.relationship_context).substring(0, 110) + (c.relationship_context.length > 110 ? '…' : '')
-      : '';
-    const hook = c.follow_up_hook
-      ? safeText(c.follow_up_hook).substring(0, 35) + (c.follow_up_hook.length > 35 ? '…' : '')
-      : 'Follow up';
-    const lastLine = c.last_contact_date
-      ? `Last email: ${new Date(c.last_contact_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
-      : '';
-    return `
-      <div class="contact-card" onclick="openInboxContact(${i})">
-        ${avatarHtml(c.name)}
-        <div>
-          <div class="contact-name">
-            ${safeText(c.name)}<span class="source-badge">📧 inbox</span>
-          </div>
-          <div class="contact-meta">${joinMeta([c.company, c.role, lastLine])}</div>
-          ${context ? `<div class="contact-note">${context}</div>` : ''}
-        </div>
-        <div class="hook-pill">${hook}</div>
-      </div>
-    `;
-  }).join('');
-}
-
-function toggleShelf() {
-  inboxShelfOpen = !inboxShelfOpen;
-  renderInboxShelf();
-}
-
-function openInboxContact(i) {
-  const c = emailContacts[i];
+async function openEmailContactDraft(idx) {
+  const c = emailContacts[idx];
   if (!c) return;
-  activeInboxContact = c;
 
-  document.getElementById('inboxPanelName').textContent = c.name
-    + (c.company ? ` — ${c.company}` : '');
-
-  document.getElementById('inboxPanelContext').textContent =
-    c.relationship_context || 'No context captured for this contact.';
-
-  const hookEl = document.getElementById('inboxPanelHook');
-  if (c.follow_up_hook) {
-    hookEl.textContent = '→ ' + c.follow_up_hook;
-    hookEl.style.display = 'block';
-  } else {
-    hookEl.style.display = 'none';
+  // If drafts already generated, open directly
+  if (c.casual) {
+    activeDraft = c;
+    draftMode = 'casual';
+    document.getElementById('draftName').textContent = `draft for ${c.name}`;
+    document.getElementById('draftReason').textContent = c.relationship_context || c.follow_up_hook || '';
+    document.getElementById('draftBody').textContent = c.casual;
+    document.querySelectorAll('#draftPanel .draft-tab').forEach((t,i) => t.classList.toggle('active', i===0));
+    document.getElementById('draftPanel').style.display = 'block';
+    document.getElementById('draftPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    return;
   }
 
-  const actionsEl = document.getElementById('inboxPanelActions');
-  actionsEl.style.display = c.email ? 'flex' : 'none';
+  // Show loading state
+  const draftPanel = document.getElementById('draftPanel');
+  document.getElementById('draftName').textContent = `draft for ${c.name}`;
+  document.getElementById('draftReason').textContent = 'generating…';
+  document.getElementById('draftBody').textContent = '';
+  draftPanel.style.display = 'block';
+  draftPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
-  document.getElementById('inboxPanel').style.display = 'block';
-  document.getElementById('inboxPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
+  try {
+    const proxyUrl = resolveProxyUrl();
+    const today = new Date().toISOString().split('T')[0];
+    const prompt = `You are a relationship intelligence assistant for a college student managing their professional network.
 
-function mailInboxContact() {
-  if (!activeInboxContact?.email) return;
-  const to = encodeURIComponent(activeInboxContact.email);
-  const sub = encodeURIComponent('Following up');
-  window.open(`mailto:${to}?subject=${sub}`);
+Today's date: ${today}
+
+Contact info:
+- Name: ${c.name}
+- Company: ${c.company || ''}
+- Role: ${c.role || ''}
+- Context: ${c.relationship_context || c.notes || ''}
+- Follow-up: ${c.follow_up_hook || ''}
+
+Respond ONLY with a JSON object, no markdown, no explanation:
+{
+  "reason": "1-2 sentence explanation of WHY to reach out now, specific to this person",
+  "casual": "A casual, natural 2-3 sentence message from Georgia to this person. Sound human, reference the context, end with a soft ask.",
+  "professional": "A professional 2-3 sentence version of the same message. Polished but warm."
+}`;
+
+    const res = await fetch(proxyUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 600,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content.map(b => b.text || '').join('');
+    const clean = text.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+
+    // Cache on the contact object
+    c.casual = parsed.casual;
+    c.professional = parsed.professional;
+    c.reason = parsed.reason;
+
+    activeDraft = c;
+    draftMode = 'casual';
+    document.getElementById('draftName').textContent = `draft for ${c.name}`;
+    document.getElementById('draftReason').textContent = parsed.reason;
+    document.getElementById('draftBody').textContent = parsed.casual;
+    document.querySelectorAll('#draftPanel .draft-tab').forEach((t,i) => t.classList.toggle('active', i===0));
+  } catch(e) {
+    document.getElementById('draftReason').textContent = c.relationship_context || c.follow_up_hook || '';
+    document.getElementById('draftBody').textContent = `Hi ${c.name.split(' ')[0]}, just wanted to reach out and check in — hope things are going well${c.company ? ' at ' + c.company : ''}!`;
+  }
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
-const now = new Date();
-const fmt = d => d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-document.getElementById('briefDate') && (document.getElementById('briefDate').textContent = fmt(now));
-
 // Load data
 loadEmailContacts();
 loadReviewQueue();
-loadDashboardStats();
 
-// Show onboarding or inbox banner
+// Show onboarding if first visit
 checkOnboarded();
-if (localStorage.getItem('cue_onboarded')) maybeShowInboxBanner();
 </script>
 </body>
 </html>
