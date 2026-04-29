@@ -29,34 +29,34 @@ export default async function handler(req, res) {
   const sql = neon(process.env.DATABASE_URL);
 
   try {
-    let rows;
+    // Build a dynamic query with positional params — Neon's tagged template
+    // literals don't support nested sql`` fragments, so we use the sql(query, params)
+    // function-call form instead for conditional filtering.
+    const conditions = [];
+    const params = [];
 
+    if (status) {
+      conditions.push(`status = $${params.length + 1}`);
+      params.push(status);
+    }
+    if (source) {
+      conditions.push(`source = $${params.length + 1}`);
+      params.push(source);
+    }
     if (q) {
       const pattern = `%${q}%`;
-      rows = await sql`
-        SELECT * FROM contacts
-        WHERE
-          (${status ? sql`status = ${status}` : sql`TRUE`})
-          AND (${source ? sql`source = ${source}` : sql`TRUE`})
-          AND (
-            name    ILIKE ${pattern}
-            OR company ILIKE ${pattern}
-            OR role    ILIKE ${pattern}
-            OR relationship_context ILIKE ${pattern}
-          )
-        ORDER BY updated_at DESC
-        LIMIT ${limit}
-      `;
-    } else {
-      rows = await sql`
-        SELECT * FROM contacts
-        WHERE
-          (${status ? sql`status = ${status}` : sql`TRUE`})
-          AND (${source ? sql`source = ${source}` : sql`TRUE`})
-        ORDER BY updated_at DESC
-        LIMIT ${limit}
-      `;
+      const i = params.length + 1;
+      conditions.push(
+        `(name ILIKE $${i} OR company ILIKE $${i} OR role ILIKE $${i} OR relationship_context ILIKE $${i})`
+      );
+      params.push(pattern);
     }
+
+    params.push(limit);
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+    const query = `SELECT * FROM contacts ${where} ORDER BY updated_at DESC LIMIT $${params.length}`;
+
+    const rows = await sql(query, params);
 
     return res.status(200).json({ ok: true, count: rows.length, contacts: rows });
   } catch (err) {
