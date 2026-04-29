@@ -414,6 +414,7 @@
     font-size: 12px; margin-left: 6px; vertical-align: middle; opacity: 0.8;
   }
 
+
   .draft-panel-backdrop {
     display: none; position: fixed; inset: 0;
     background: rgba(40,30,20,0.38); z-index: 300;
@@ -1339,6 +1340,7 @@
   </div>
 </div>
 
+
 <!-- Draft modal -->
 <div class="draft-panel-backdrop" id="draftBackdrop" onclick="closeDraftPanel(event)">
   <div id="draftPanel" class="draft-panel">
@@ -2223,6 +2225,114 @@ async function saveCompanyEdits() {
   } catch (e) {
     saveBtn.textContent = 'save';
     showToast('could not save — try again');
+  }
+}
+
+// ─── CONTACT PROFILE MODAL ───────────────────────────────────────────────────
+let activeProfileContact = null;   // { contact, type: 'csv'|'email', idx }
+
+function openProfileModal(type, idx) {
+  const c = type === 'csv' ? analyzed[idx] : emailContacts[idx];
+  if (!c) return;
+  activeProfileContact = { contact: c, type, idx };
+
+  // Avatar
+  const colors = getAvatarColors(c.name || '');
+  const avatarEl = document.getElementById('profileAvatar');
+  avatarEl.style.background = colors.bg;
+  avatarEl.style.color = colors.fg;
+  avatarEl.textContent = getInitials(c.name || '');
+
+  // Name + meta
+  document.getElementById('profileName').textContent = c.name || '';
+  const co = c.company || ''; const ro = c.role || '';
+  const showRole = ro && !co.toLowerCase().includes(ro.toLowerCase());
+  document.getElementById('profileMeta').textContent = [showRole ? ro : null, co].filter(Boolean).join(' · ');
+
+  // LinkedIn
+  const li = c.linkedin || '';
+  document.getElementById('profileLinkedin').value = li;
+  updateLinkedinLink(li);
+
+  // Notes
+  document.getElementById('profileNotes').value = c.notes || '';
+
+  // Reset save button
+  const saveBtn = document.getElementById('profileSaveBtn');
+  saveBtn.textContent = 'save';
+  saveBtn.classList.remove('saved');
+
+  // Show/hide email button based on whether there's an email
+  document.getElementById('profileEmailBtn').style.display = c.email ? '' : 'none';
+
+  document.getElementById('profileBackdrop').classList.add('open');
+}
+
+function closeProfileModal(e) {
+  if (e && e.target !== document.getElementById('profileBackdrop')) return;
+  document.getElementById('profileBackdrop').classList.remove('open');
+}
+
+function updateLinkedinLink(val) {
+  const link = document.getElementById('profileLinkedinLink');
+  const trimmed = val.trim();
+  if (trimmed) {
+    const href = trimmed.startsWith('http') ? trimmed : 'https://' + trimmed;
+    link.href = href;
+    link.style.display = '';
+  } else {
+    link.style.display = 'none';
+  }
+}
+
+document.getElementById('profileLinkedin').addEventListener('input', function() {
+  updateLinkedinLink(this.value);
+});
+
+async function saveProfileEdits() {
+  if (!activeProfileContact) return;
+  const c = activeProfileContact.contact;
+  if (!c.id) return;
+
+  const linkedin = document.getElementById('profileLinkedin').value.trim();
+  const notes    = document.getElementById('profileNotes').value;
+
+  // Optimistically update the in-memory contact so reopening shows fresh data
+  c.linkedin = linkedin;
+  c.notes    = notes;
+
+  const saveBtn = document.getElementById('profileSaveBtn');
+  saveBtn.textContent = 'saving…';
+
+  try {
+    await fetch(`/api/contacts/${c.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ linkedin, notes }),
+    });
+    saveBtn.textContent = 'saved ✓';
+    saveBtn.classList.add('saved');
+    setTimeout(() => { saveBtn.textContent = 'save'; saveBtn.classList.remove('saved'); }, 2000);
+  } catch (e) {
+    saveBtn.textContent = 'save';
+    showToast('could not save — try again');
+  }
+}
+
+async function profileSendEmail() {
+  if (!activeProfileContact) return;
+  const { contact: c, type, idx } = activeProfileContact;
+
+  // Save any pending edits first
+  await saveProfileEdits();
+
+  // Close profile, open draft
+  document.getElementById('profileBackdrop').classList.remove('open');
+
+  if (type === 'csv') {
+    openDraft1(idx);
+  } else {
+    openEmailContactDraft(idx);
   }
 }
 
